@@ -1,14 +1,23 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Ian Shehadeh</title>
-    <link>https://IanS5.github.io/</link>
-    <description>Recent content on Ian Shehadeh</description>
+    <title>Ian&#39;s Website</title>
+    <link>http://ian.shehadeh.net/</link>
+    <description>Recent content on Ian&#39;s Website</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
-	<atom:link href="https://IanS5.github.io/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="http://ian.shehadeh.net/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>About</title>
+      <link>http://ian.shehadeh.net/about/</link>
+      <pubDate>Thu, 18 Jun 2020 09:15:11 -0400</pubDate>
+      
+      <guid>http://ian.shehadeh.net/about/</guid>
+      <description></description>
+    </item>
     
   </channel>
 </rss>

@@ -1,0 +1,3 @@
+User-agent: *
+
+Sitemap: http://ian.shehadeh.net//sitemap.xml
