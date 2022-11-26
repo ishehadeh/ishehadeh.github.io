@@ -5,15 +5,11 @@
     <link>http://ian.shehadeh.net/</link>
     <description>Recent content on Ian&#39;s Website</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    
-	<atom:link href="http://ian.shehadeh.net/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <language>en-us</language><atom:link href="http://ian.shehadeh.net/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>About</title>
+      <title></title>
       <link>http://ian.shehadeh.net/about/</link>
-      <pubDate>Thu, 18 Jun 2020 09:15:11 -0400</pubDate>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://ian.shehadeh.net/about/</guid>
       <description></description>
