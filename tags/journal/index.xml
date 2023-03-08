@@ -6,16 +6,23 @@
     <description>Recent content in journal on Ian&#39;s Website</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Wed, 08 Feb 2023 18:59:32 -0500</lastBuildDate><atom:link href="http://ian.shehadeh.net/tags/journal/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 07 Mar 2023 15:33:00 -0500</lastBuildDate><atom:link href="http://ian.shehadeh.net/tags/journal/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Half Marathon</title>
+      <link>http://ian.shehadeh.net/posts/half-marathon/</link>
+      <pubDate>Tue, 07 Mar 2023 15:33:00 -0500</pubDate>
+      
+      <guid>http://ian.shehadeh.net/posts/half-marathon/</guid>
+      <description>Finally achieved a long-standing goal</description>
+    </item>
+    
     <item>
       <title>10 Miles</title>
       <link>http://ian.shehadeh.net/posts/10mi/</link>
       <pubDate>Wed, 08 Feb 2023 18:59:32 -0500</pubDate>
       
       <guid>http://ian.shehadeh.net/posts/10mi/</guid>
-      <description>I ran 10 miles today!
-My previous record was 9mi, from about a year ago. That run was from the half-marathon training which I quit, right after. Getting up to that distance again felt amazing.
-I&amp;rsquo;m still hoping to run a half-marathon some day. Though I don&amp;rsquo;t want to push it. For the time being I&amp;rsquo;ll just run when I feel like it, for whatever distance I can. This &amp;ldquo;plan&amp;rdquo; has been working much better than my training plan did last year.</description>
+      <description>Personal best!</description>
     </item>
     
   </channel>
