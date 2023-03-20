@@ -6,14 +6,24 @@
     <description>Recent content on Ian&#39;s Website</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 07 Mar 2023 15:33:00 -0500</lastBuildDate><atom:link href="http://ian.shehadeh.net/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 20 Mar 2023 14:59:28 -0400</lastBuildDate><atom:link href="http://ian.shehadeh.net/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Spanish to English Dictionary in TCL</title>
+      <link>http://ian.shehadeh.net/posts/es2en-in-tcl/</link>
+      <pubDate>Mon, 20 Mar 2023 14:59:28 -0400</pubDate>
+      
+      <guid>http://ian.shehadeh.net/posts/es2en-in-tcl/</guid>
+      <description>Recently I&amp;rsquo;ve been playing around with possible machine-readable formats for a Spanish to English dictionary. My first attempt was using YAML, something along the lines of
+hablar:  class: verb  translation: to talk The schema was pretty simple and soon enough I needed something a bit more complex. Something with support for multiple definitions, context, etc. I could have probably worked on the YAML schema a bit more, and gotten it to be a good fit.</description>
+    </item>
+    
     <item>
       <title>Half Marathon</title>
       <link>http://ian.shehadeh.net/posts/half-marathon/</link>
       <pubDate>Tue, 07 Mar 2023 15:33:00 -0500</pubDate>
       
       <guid>http://ian.shehadeh.net/posts/half-marathon/</guid>
-      <description>Ran my first half marathon! a</description>
+      <description>Ran my first half marathon!</description>
     </item>
     
     <item>

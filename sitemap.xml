@@ -2,16 +2,19 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>http://ian.shehadeh.net/</loc>
+    <lastmod>2023-03-20T14:59:28-04:00</lastmod>
+  </url><url>
+    <loc>http://ian.shehadeh.net/posts/</loc>
+    <lastmod>2023-03-20T14:59:28-04:00</lastmod>
+  </url><url>
+    <loc>http://ian.shehadeh.net/posts/es2en-in-tcl/</loc>
+    <lastmod>2023-03-20T14:59:28-04:00</lastmod>
+  </url><url>
     <loc>http://ian.shehadeh.net/posts/half-marathon/</loc>
     <lastmod>2023-03-07T15:33:00-05:00</lastmod>
   </url><url>
-    <loc>http://ian.shehadeh.net/</loc>
-    <lastmod>2023-03-07T15:33:00-05:00</lastmod>
-  </url><url>
     <loc>http://ian.shehadeh.net/tags/journal/</loc>
-    <lastmod>2023-03-07T15:33:00-05:00</lastmod>
-  </url><url>
-    <loc>http://ian.shehadeh.net/posts/</loc>
     <lastmod>2023-03-07T15:33:00-05:00</lastmod>
   </url><url>
     <loc>http://ian.shehadeh.net/tags/running/</loc>

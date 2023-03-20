@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"  lang="en-us">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Spanish to English Dictionary in TCL | Ian&#39;s Website</title>
+
+<meta property='og:title' content='Spanish to English Dictionary in TCL - Ian&#39;s Website'>
+<meta property='og:description' content='Recently I&rsquo;ve been playing around with possible machine-readable formats for a Spanish to English dictionary. My first attempt was using YAML, something along the lines of
+hablar:  class: verb  translation: to talk The schema was pretty simple and soon enough I needed something a bit more complex. Something with support for multiple definitions, context, etc. I could have probably worked on the YAML schema a bit more, and gotten it to be a good fit.'>
+<meta property='og:url' content='http://ian.shehadeh.net/posts/es2en-in-tcl/'>
+<meta property='og:site_name' content='Ian&#39;s Website'>
+<meta property='og:type' content='article'><meta property='og:image' content='https://www.gravatar.com/avatar/075bfbdb2bf50ef573bf13a2f386752c?s=256'><meta property='article:section' content='Posts'><meta property='article:published_time' content='2023-03-20T14:59:28-04:00'><meta property='article:modified_time' content='2023-03-20T14:59:28-04:00'><meta name='twitter:card' content='summary'><meta name='twitter:site' content='@'><meta name='twitter:creator' content='@'>
+
+
+<link href="http://ian.shehadeh.net/index.xml" rel="alternate" type="application/rss+xml" title="Ian&#39;s Website">
+
+<link rel="stylesheet" href="/css/style.css">
+
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="canonical" href="http://ian.shehadeh.net/posts/es2en-in-tcl/">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="theme-color" content="#ffffff">
+</head>
+<body>
+
+<section class="section">
+  <div class="container">
+    <nav id="nav-main" class="nav">
+      <div id="nav-name" class="nav-left">
+        <a id="nav-anchor" class="nav-item" href="http://ian.shehadeh.net/">
+          <h1 id="nav-heading" class="title is-4">Ian&#39;s Website</h1>
+        </a>
+      </div>
+      <div class="nav-right">
+        <nav id="nav-items" class="nav-item level is-mobile"><a class="level-item" aria-label="github" href='https://github.com/ishehadeh'
+            target='_blank' rel='me noopener'>
+            <span class="icon">
+              <i class><svg viewbox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' aria-hidden='true'>
+    
+    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+    
+  </svg>
+</i>
+            </span>
+          </a><a class="level-item" aria-label="mastodon" href='https://indieweb.social/@ianshehadeh'
+            target='_blank' rel='me noopener'>
+            <span class="icon">
+              <i class><svg viewbox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' aria-hidden='true'>
+    
+    <path d="M 11.966876,0.80329086 C 9.1123466,0.82665791 6.3664935,1.1367094 4.7662978,1.8737549 c 0,0 -3.1736685,1.4237835 -3.1736685,6.2815982 0,1.1123884 -0.021554,2.4424309 0.013571,3.8529439 0.1152443,4.750677 0.8683725,9.432704 5.2479219,10.595273 2.0193066,0.53604 3.7531218,0.648348 5.1494078,0.571373 2.532141,-0.140797 3.953603,-0.906282 3.953603,-0.906282 l -0.08353,-1.842608 c 0,0 -1.809527,0.572181 -3.841713,0.50245 -2.013417,-0.06922 -4.138986,-0.217713 -4.4646269,-2.696937 -0.030082,-0.217772 -0.045075,-0.450712 -0.045075,-0.695267 0,0 1.9765387,0.484554 4.4813709,0.599656 1.531629,0.07049 2.9679,-0.08996 4.426746,-0.264563 2.797636,-0.335045 5.233581,-2.063856 5.539741,-3.643517 0.482392,-2.488386 0.442651,-6.0725219 0.442651,-6.0725219 0,-4.8578147 -3.173492,-6.2815982 -3.173492,-6.2815982 C 17.639136,1.1367094 14.891579,0.82669685 12.03704,0.80329086 Z"/>
+  <path d="M 6.4286668,14.016701 V 9.1034254 c 0,-1.0041614 0.2549569,-1.8022059 0.7670342,-2.3925638 0.5280486,-0.590366 1.2196579,-0.8929946 2.0781049,-0.8929946 0.9931961,0 1.7452181,0.3828583 2.2425191,1.1486808 L 11.999859,7.7793695 12,11.451148 11.999859,7.7793695 12.483392,6.9665478 C 12.980596,6.2007253 13.732618,5.817867 14.72592,5.817867 c 0.858341,0 1.549951,0.3026286 2.078097,0.8929946 0.511971,0.5903579 0.766887,1.3884024 0.766887,2.3925638 v 4.9132756" />
+    
+  </svg>
+</i>
+            </span>
+          </a><a class="level-item" aria-label="linkedin" href='https://linkedin.com/in/ian-shehadeh-421480160'
+            target='_blank' rel='me noopener'>
+            <span class="icon">
+              <i class><svg viewbox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' aria-hidden='true'>
+    
+    <path stroke-width="1.8" d="m5.839218,4.101561c0,1.211972 -0.974141,2.194011 -2.176459,2.194011s-2.176459,-0.982039 -2.176459,-2.194011c0,-1.211094 0.974141,-2.194011 2.176459,-2.194011s2.176459,0.982917 2.176459,2.194011zm0.017552,3.94922l-4.388022,0l0,14.04167l4.388022,0l0,-14.04167zm7.005038,0l-4.359939,0l0,14.04167l4.360816,0l0,-7.370999c0,-4.098413 5.291077,-4.433657 5.291077,0l0,7.370999l4.377491,0l0,-8.89101c0,-6.915523 -7.829986,-6.66365 -9.669445,-3.259423l0,-1.891237z"/>
+    
+  </svg>
+</i>
+            </span>
+          </a><a class="level-item" aria-label="email" href='mailto:IanShehadeh2020@gmail.com'
+            target='_blank' rel='me noopener'>
+            <span class="icon">
+              <i class><svg viewbox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' aria-hidden='true'>
+    
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+    <polyline points="22,6 12,13 2,6"/>
+    
+  </svg>
+</i>
+            </span>
+          </a><a class="level-item" aria-label="rss" href='/index.xml'
+            target='_blank' rel='me noopener'>
+            <span class="icon">
+              <i class><svg viewbox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' aria-hidden='true'>
+    
+    <path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle>
+    
+  </svg>
+</i>
+            </span>
+          </a></nav>
+      </div>
+    </nav>
+
+    <nav class="nav">
+      
+      <div class="nav-left"><a class="nav-item" href="/about">
+          <h2 class="title is-5">About</h2>
+        </a></div>
+      
+
+      
+    </nav>
+
+  </div>
+  <script src="/js/navicon-shift.js"></script>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="subtitle tags is-6 is-pulled-right">
+      
+    </div>
+    <h2 class="subtitle is-6">March 20, 2023</h2>
+    <h1 class="title">Spanish to English Dictionary in TCL</h1>
+    
+    <div class="content">
+      <p>Recently I&rsquo;ve been playing around with possible machine-readable formats for a Spanish to English dictionary. My first attempt was using YAML, something along the lines of</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">hablar</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">class</span>: <span style="color:#ae81ff">verb</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">translation</span>: <span style="color:#ae81ff">to talk</span>
+</span></span></code></pre></div><p>The schema was pretty simple and soon enough I needed something a bit more complex. Something with support for multiple definitions, context, etc.
+I could have probably worked on the YAML schema a bit more, and gotten it to be a good fit. But:</p>
+<ol>
+<li>I don&rsquo;t like YAML, aside from <a href="https://ruudvanasseldonk.com/2023/01/11/the-yaml-document-from-hell">all the good reasons</a> to not like it, I really just don&rsquo;t like whitespace-based syntax.</li>
+<li>It&rsquo;s boring! I&rsquo;ve written a lot of YAML. It works, but I wanted to try something new.</li>
+</ol>
+<h2 id="tcl">TCL</h2>
+<p>I&rsquo;ve been interested in TCl for a while. I keep <em>trying</em> to use it for something but its never stuck. This seemed like the perfect use case though. All I need is small, mostly data DSL.</p>
+<p>So, here&rsquo;s what I&rsquo;ve got so far. I plan to develop it further as I study more Spanish.</p>
+<h2 id="dictionary-format">Dictionary Format</h2>
+<p>The basic format looks something like this.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-tcl" data-lang="tcl"><span style="display:flex;"><span>word subir <span style="color:#66d9ef">{</span>
+</span></span><span style="display:flex;"><span>    class verb.transitive
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    context <span style="color:#e6db74">&#34;to ascend&#34;</span> <span style="color:#66d9ef">{</span>
+</span></span><span style="display:flex;"><span>        a. to go up
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    context <span style="color:#e6db74">&#34;to increase&#34;</span> <span style="color:#66d9ef">{</span>
+</span></span><span style="display:flex;"><span>        a. to raise
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">}</span>
+</span></span></code></pre></div><p>Translations are defined with the &ldquo;word&rdquo; command.
+The block it&rsquo;s passed is evaluated in the <code>::dictionary::definition</code> namespace, which defines a few procedures.</p>
+<ul>
+<li><code>class</code> Primarily defines the word&rsquo;s part of speech (noun, verb, adverb, etc.) then further (optional) classifications each preceded by a &lsquo;.&rsquo;</li>
+<li><code>context</code> Defines a sub-definition associated with some context, described by the first parameter. The following block is also evaluated in the <code>definition</code> namespace, so it can even contain sub-contexts, or special case the part of speech.</li>
+<li><code>[a-z].</code> A single letter followed by a &ldquo;.&rdquo; defines a translation, formed by joining the arguments with spaces.</li>
+</ul>
+<p>And that&rsquo;s about it. So far&hellip;</p>
+<p>I&rsquo;m planning to add a few more procedures the definition namespace, specifically:</p>
+<ul>
+<li><code>example</code> Will give an example sentence with the word, and an English translation of the sentence.</li>
+<li><code>conjugations</code> Will list conjugations for verbs. I&rsquo;m still trying to figure out exactly how to do this. I think the best way is to write them all out, so that irregulars don&rsquo;t have to be special cased. Plus, I want to write them out to practice. Some conjugations will be tedious though, and it&rsquo;ll take up <em>so much</em> space to write them out. So I think it&rsquo;ll be best to have helpers that can optionally generate conjugations.</li>
+</ul>
+<h2 id="implementation">Implementation</h2>
+<p>Now, here&rsquo;s where it gets weird. I&rsquo;m new to TCL, I don&rsquo;t know the idioms, and <em>may</em> have gone a little crazy with it&rsquo;s dynamic features.</p>
+<p>There&rsquo;s a global inside the <code>::dictionary</code> namespace called <code>EXECUTOR</code>. Functions are invoked in the namespace referenced by <code>EXECUTOR</code> as the dictionary is evaluated. The <code>::dictionary::definition</code> procedures normalize their input then call an associated procedure in the <code>$EXECUTOR</code> namespace. For example <code>a. to go up</code> will invoke <code>$EXECUTOR::definition &quot;a&quot; &quot;to go up&quot;</code>. <code>$EXECUTOR::begin-word &lt;WORD&gt;</code> and <code>$EXECUTOR::end-word &lt;WORD&gt;</code> are called before and after the block is evaluated, there are similar functions for context.</p>
+<p>For example, here&rsquo;s the definition of <code>dictionary::word</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-tcl" data-lang="tcl"><span style="display:flex;"><span><span style="color:#66d9ef">proc</span> word <span style="color:#66d9ef">{</span>word body<span style="color:#66d9ef">}</span> <span style="color:#66d9ef">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">variable</span> EXECUTOR
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">namespace</span> inscope $EXECUTOR begin-word $word
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">namespace</span> inscope <span style="color:#f92672">::</span>dictionary::definition $body
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">namespace</span> inscope $EXECUTOR end-word $word
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">}</span>
+</span></span></code></pre></div><p>Users can define a namespace that looks something like:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-tcl" data-lang="tcl"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> eval <span style="color:#f92672">::</span>nop-executor <span style="color:#66d9ef">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">proc</span> begin-word <span style="color:#66d9ef">{</span>word<span style="color:#66d9ef">}</span> <span style="color:#66d9ef">{</span> <span style="color:#66d9ef">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">proc</span> end-word <span style="color:#66d9ef">{</span>word<span style="color:#66d9ef">}</span> <span style="color:#66d9ef">{</span> <span style="color:#66d9ef">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">proc</span> definition <span style="color:#66d9ef">{</span>label def<span style="color:#66d9ef">}</span> <span style="color:#66d9ef">{</span> <span style="color:#66d9ef">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">proc</span> class <span style="color:#66d9ef">{</span>p<span style="color:#66d9ef">}</span> <span style="color:#66d9ef">{</span> <span style="color:#66d9ef">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">proc</span> begin-context <span style="color:#66d9ef">{</span>context<span style="color:#66d9ef">}</span> <span style="color:#66d9ef">{</span> <span style="color:#66d9ef">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">proc</span> end-context <span style="color:#66d9ef">{</span>context<span style="color:#66d9ef">}</span> <span style="color:#66d9ef">{</span> <span style="color:#66d9ef">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">}</span>
+</span></span></code></pre></div><p>Then set executor to the namespace and eval a dictionary in the <code>::dictionary</code> namespace:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-tcl" data-lang="tcl"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> inscope <span style="color:#f92672">::</span>dictionary <span style="color:#66d9ef">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">variable</span> EXECUTOR <span style="color:#e6db74">&#34;::nop-executor&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">eval</span> <span style="color:#66d9ef">[</span>read stdin<span style="color:#66d9ef">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">}</span>
+</span></span></code></pre></div><p>I can&rsquo;t help but feel there&rsquo;s a <em>much</em> better way of doing this. I tried dictionaries, but they were really awkward to work with. Using the pull style parser keeps the implementation simple, and lets me extract information pretty easily. I&rsquo;ll definitely keep my eye out for something else but this works well enough for now.</p>
+
+      
+    </div>
+    
+  </div>
+</section>
+
+
+
+<section class="section">
+  <div class="container has-text-centered">
+    <p></p>
+    
+  </div>
+</section>
+
+
+
+
+
+</body>
+</html>
+
