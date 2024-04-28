@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Schools on Ian&#39;s Website</title>
+    <link>http://ian.shehadeh.net/school/</link>
+    <description>Recent content in Schools on Ian&#39;s Website</description>
+    <generator>Hugo 0.125.1</generator>
+    <language>en-us</language>
+    <atom:link href="http://ian.shehadeh.net/school/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title></title>
+      <link>http://ian.shehadeh.net/school/cosc360/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://ian.shehadeh.net/school/cosc360/</guid>
+      <description>&lt;!DOCTYPE html&gt; Project 3 Predicting Car Crash Injury Severity Using Naive Bayes Classification¶ In this tutorial we will be predicting the injury level of car crashes based on data provided by police. We wil use two datasets from Montgomery County, Maryland. The data is collected via the Automated Crash Reporting System (ACRS). Specifically, we will use two datasets:&#xA;Incidents Report: This dataset provides general information on the crash. Drivers Report: This dataset provides information on the drivers involved in the crash, including injury.</description>
+    </item>
+    <item>
+      <title></title>
+      <link>http://ian.shehadeh.net/school/howlite-sp24/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://ian.shehadeh.net/school/howlite-sp24/</guid>
+      <description>&lt;!DOCTYPE html&gt; Howlite Howlite Ian Shehadeh&#xA;April 29, 2024&#xA;Syntax C-like with a dash of Typescript and Rust Stick to popular conventions Abbreviations: “bool”, “int”, etc. Symbols: “+”, “-”, “&amp;lt;”, “&amp;gt;”, etc. func fib(): u16 { let N: u16 = 10; let mut memory: [u16; 2] = [ 0, 1 ]; let mut acc: u16 = 0; let i: u16 = 0; while i &amp;lt; N { acc = (memory.[0] + memory.</description>
+    </item>
+  </channel>
+</rss>

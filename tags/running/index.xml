@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>running on Ian&#39;s Website</title>
+    <title>Running on Ian&#39;s Website</title>
     <link>http://ian.shehadeh.net/tags/running/</link>
-    <description>Recent content in running on Ian&#39;s Website</description>
-    <generator>Hugo -- gohugo.io</generator>
+    <description>Recent content in Running on Ian&#39;s Website</description>
+    <generator>Hugo 0.125.1</generator>
     <language>en-us</language>
     <lastBuildDate>Tue, 07 Mar 2023 15:33:00 -0500</lastBuildDate>
     <atom:link href="http://ian.shehadeh.net/tags/running/index.xml" rel="self" type="application/rss+xml" />

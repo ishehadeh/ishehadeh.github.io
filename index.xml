@@ -4,7 +4,7 @@
     <title>Ian&#39;s Website</title>
     <link>http://ian.shehadeh.net/</link>
     <description>Recent content on Ian&#39;s Website</description>
-    <generator>Hugo -- gohugo.io</generator>
+    <generator>Hugo 0.125.1</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 20 Mar 2023 14:59:28 -0400</lastBuildDate>
     <atom:link href="http://ian.shehadeh.net/index.xml" rel="self" type="application/rss+xml" />
@@ -13,8 +13,7 @@
       <link>http://ian.shehadeh.net/posts/es2en-in-tcl/</link>
       <pubDate>Mon, 20 Mar 2023 14:59:28 -0400</pubDate>
       <guid>http://ian.shehadeh.net/posts/es2en-in-tcl/</guid>
-      <description>Recently I&amp;rsquo;ve been playing around with possible machine-readable formats for a Spanish to English dictionary. My first attempt was using YAML, something along the lines of
-hablar: class: verb translation: to talk The schema was pretty simple and soon enough I needed something a bit more complex. Something with support for multiple definitions, context, etc. I could have probably worked on the YAML schema a bit more, and gotten it to be a good fit.</description>
+      <description>Recently I&amp;rsquo;ve been playing around with possible machine-readable formats for a Spanish to English dictionary. My first attempt was using YAML, something along the lines of&#xA;hablar: class: verb translation: to talk The schema was pretty simple and soon enough I needed something a bit more complex. Something with support for multiple definitions, context, etc. I could have probably worked on the YAML schema a bit more, and gotten it to be a good fit.</description>
     </item>
     <item>
       <title>Half Marathon</title>
@@ -29,6 +28,20 @@ hablar: class: verb translation: to talk The schema was pretty simple and soon e
       <pubDate>Wed, 08 Feb 2023 18:59:32 -0500</pubDate>
       <guid>http://ian.shehadeh.net/posts/10mi/</guid>
       <description>Personal best!</description>
+    </item>
+    <item>
+      <title></title>
+      <link>http://ian.shehadeh.net/school/cosc360/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://ian.shehadeh.net/school/cosc360/</guid>
+      <description>&lt;!DOCTYPE html&gt; Project 3 Predicting Car Crash Injury Severity Using Naive Bayes Classification¶ In this tutorial we will be predicting the injury level of car crashes based on data provided by police. We wil use two datasets from Montgomery County, Maryland. The data is collected via the Automated Crash Reporting System (ACRS). Specifically, we will use two datasets:&#xA;Incidents Report: This dataset provides general information on the crash. Drivers Report: This dataset provides information on the drivers involved in the crash, including injury.</description>
+    </item>
+    <item>
+      <title></title>
+      <link>http://ian.shehadeh.net/school/howlite-sp24/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://ian.shehadeh.net/school/howlite-sp24/</guid>
+      <description>&lt;!DOCTYPE html&gt; Howlite Howlite Ian Shehadeh&#xA;April 29, 2024&#xA;Syntax C-like with a dash of Typescript and Rust Stick to popular conventions Abbreviations: “bool”, “int”, etc. Symbols: “+”, “-”, “&amp;lt;”, “&amp;gt;”, etc. func fib(): u16 { let N: u16 = 10; let mut memory: [u16; 2] = [ 0, 1 ]; let mut acc: u16 = 0; let i: u16 = 0; while i &amp;lt; N { acc = (memory.[0] + memory.</description>
     </item>
     <item>
       <title>Hi, my name&#39;s Ian</title>
