@@ -4,16 +4,23 @@
     <title>Ian&#39;s Website</title>
     <link>http://ian.shehadeh.net/</link>
     <description>Recent content on Ian&#39;s Website</description>
-    <generator>Hugo 0.125.1</generator>
+    <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 20 Mar 2023 14:59:28 -0400</lastBuildDate>
+    <lastBuildDate>Tue, 05 Nov 2024 19:12:00 -0400</lastBuildDate>
     <atom:link href="http://ian.shehadeh.net/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Why Write a Programming Language</title>
+      <link>http://ian.shehadeh.net/posts/01-why-pl/</link>
+      <pubDate>Tue, 05 Nov 2024 19:12:00 -0400</pubDate>
+      <guid>http://ian.shehadeh.net/posts/01-why-pl/</guid>
+      <description>What does it mean to make a programming language</description>
+    </item>
     <item>
       <title>Spanish to English Dictionary in TCL</title>
       <link>http://ian.shehadeh.net/posts/es2en-in-tcl/</link>
       <pubDate>Mon, 20 Mar 2023 14:59:28 -0400</pubDate>
       <guid>http://ian.shehadeh.net/posts/es2en-in-tcl/</guid>
-      <description>Recently I&amp;rsquo;ve been playing around with possible machine-readable formats for a Spanish to English dictionary. My first attempt was using YAML, something along the lines of&#xA;hablar: class: verb translation: to talk The schema was pretty simple and soon enough I needed something a bit more complex. Something with support for multiple definitions, context, etc. I could have probably worked on the YAML schema a bit more, and gotten it to be a good fit.</description>
+      <description>&lt;p&gt;Recently I&amp;rsquo;ve been playing around with possible machine-readable formats for a Spanish to English dictionary. My first attempt was using YAML, something along the lines of&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;hablar&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;class&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;verb&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;translation&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;to talk&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The schema was pretty simple and soon enough I needed something a bit more complex. Something with support for multiple definitions, context, etc.&#xA;I could have probably worked on the YAML schema a bit more, and gotten it to be a good fit. But:&lt;/p&gt;</description>
     </item>
     <item>
       <title>Half Marathon</title>
@@ -34,7 +41,7 @@
       <link>http://ian.shehadeh.net/about/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://ian.shehadeh.net/about/</guid>
-      <description>I&amp;rsquo;m a computer science student with a passion for programming. I&amp;rsquo;m particularly interested in programming languages and Unix systems (mostly linux). I love learning new languages and administering self-hosted applications.</description>
+      <description>&lt;p&gt;I&amp;rsquo;m a computer science student with a passion for programming. I&amp;rsquo;m particularly interested in programming languages and Unix systems (mostly linux). I love learning new languages and administering self-hosted applications.&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>

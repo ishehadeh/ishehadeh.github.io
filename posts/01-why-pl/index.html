@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>10 Miles | Ian&#39;s Website</title>
+<title>Why Write a Programming Language | Ian&#39;s Website</title>
 
-<meta property='og:title' content='10 Miles - Ian&#39;s Website'>
-<meta property='og:description' content='Personal best!'>
-<meta property='og:url' content='http://ian.shehadeh.net/posts/10mi/'>
+<meta property='og:title' content='Why Write a Programming Language - Ian&#39;s Website'>
+<meta property='og:description' content='What does it mean to make a programming language'>
+<meta property='og:url' content='http://ian.shehadeh.net/posts/01-why-pl/'>
 <meta property='og:site_name' content='Ian&#39;s Website'>
-<meta property='og:type' content='article'><meta property='og:image' content='https://www.gravatar.com/avatar/4b31309cb12569288f0cc3c474dad7ab?s=256'><meta property='article:section' content='Posts'><meta property='article:tag' content='running'><meta property='article:tag' content='journal'><meta property='article:published_time' content='2023-02-08T18:59:32-05:00'><meta property='article:modified_time' content='2023-02-08T18:59:32-05:00'><meta name='twitter:card' content='summary'><meta name='twitter:site' content='@'><meta name='twitter:creator' content='@'>
+<meta property='og:type' content='article'><meta property='og:image' content='https://www.gravatar.com/avatar/4b31309cb12569288f0cc3c474dad7ab?s=256'><meta property='article:section' content='Posts'><meta property='article:published_time' content='2024-11-05T19:12:00-04:00'><meta property='article:modified_time' content='2024-11-05T19:12:00-04:00'><meta name='twitter:card' content='summary'><meta name='twitter:site' content='@'><meta name='twitter:creator' content='@'>
 
 
 
@@ -24,7 +24,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
-<link rel="canonical" href="http://ian.shehadeh.net/posts/10mi/">
+<link rel="canonical" href="http://ian.shehadeh.net/posts/01-why-pl/">
 <meta name="msapplication-TileColor" content="#da532c">
 <meta name="theme-color" content="#ffffff">
 </head>
@@ -113,28 +113,48 @@
   <div class="container">
     <div class="subtitle tags is-6 is-pulled-right">
       
-      
-<a class="subtitle is-6" href="/tags/running/">#running</a>
-
-
-
-  
-  | <a class="subtitle is-6" href="/tags/journal/">#journal</a>
-  
-
-
-      
     </div>
     
-    <h2 class="subtitle is-6">February 8, 2023</h2>
+    <h2 class="subtitle is-6">November 5, 2024</h2>
     
-    <h1 class="title">10 Miles</h1>
+    <h1 class="title">Why Write a Programming Language</h1>
     
     <div class="content">
-      <p>I ran 10 miles today!</p>
-<p>My previous record was 9mi, from about a year ago. That run was from the half-marathon training which I quit, right after. Getting up to that distance again felt amazing.</p>
-<p>I&rsquo;m still hoping to run a half-marathon some day. Though I don&rsquo;t want to push it. For the time being I&rsquo;ll just run when I feel like it, for whatever distance I can. This &ldquo;plan&rdquo; has been working much better than my training plan did last year. I&rsquo;ve had much more fun on my runs, it&rsquo;s a good way to de-stress. I look forward to running now. It&rsquo;s not that it was never like that last year, but I found myself dreading the long runs more often than not. And eventually I just gave up on running.</p>
-<p>Can&rsquo;t wait to run tomorrow :)</p>
+      <h1 id="why-write-a-programming-language">Why Write a Programming Language</h1>
+<p>This is the first in a series of posts that should - hopefully, help me crystalize ideas about my senior project at St. Mary&rsquo;s College of Maryland.
+I&rsquo;m writing a compiler for a programming language I designed called <a href="https://github.com/ishehadeh/howlite">Howlite</a>.
+Before I discuss what&rsquo;s interesting about <em>my</em> language, it&rsquo;s important to establish what it means to &ldquo;make a programming language&rdquo;.</p>
+<h2 id="differentiating-languages">Differentiating Languages</h2>
+<p>Programming languages are one of the many, many, interfaces to help us utilize computers.
+<em>Microsoft Word</em> helps us compose and format documents, and programming languages help us create algorithms.
+Just like word processors, or painting applications, there are countless ways to tweak a programming language&rsquo;s interface to make it more suited to a particular use case or audience.</p>
+<p>Here are two quick examples.</p>
+<h3 id="hedy">Hedy</h3>
+<p>Hedy [<a href="https://hedycode.com">2</a>] is a programming for teaching programming.
+It&rsquo;s almost entirely natural language (no scary &ldquo;{&rdquo; or &ldquo;$&rdquo;) and it is translated into many languages (even right-to-left languages!).
+Hedy also lets programmers see, or hear the results of their work: it has easily accessible functionality for playing music and drawing graphics.</p>
+<pre tabindex="0"><code class="language-hedy" data-lang="hedy">قول Hello!
+اسأل What is your name?
+</code></pre><pre tabindex="0"><code class="language-hedy" data-lang="hedy">print Hello!
+ask What is your name?
+</code></pre><h3 id="go">Go</h3>
+<p>Go was an answer to problems with the software infastructure at Google [<a href="https://go.dev/talks/2012/splash.article">1</a>].
+It&rsquo;s designed to be used in large, long-lived software projects.
+There&rsquo;s a focus on clear syntax and semantics: no matter who wrote the code, what it does, and how it does it should be clear to any programmer.
+It also comes bundled with a tools to help keep programs up to date and consistent.</p>
+<h2 id="why-am-i-making-a-language">Why am I Making a Language</h2>
+<p>Computers are complicated, I find making them more accessible an interesting challenge.
+Programming languages in particular piqued my interest becuase I like programming.
+Programming is just solving logic puzzles, anything that let&rsquo;s me look at these problems in a different way is facinating.</p>
+<p>The goal of my project in particular was to:</p>
+<ol>
+<li>Learn about the components of a compiler.</li>
+<li>Expirement with precise types for scalar values.</li>
+<li>Applications of sub-type polymorphism and structural typing in resource constrained environments.</li>
+</ol>
+<p>There isn&rsquo;t any particularly interesting theory behind any of those goals.
+I just threw a bunch of ideas at the wall, and those ware what stuck.
+I don&rsquo;t expect Howlite to be a fantastic programming language, but I hope that its unique enough that its particular blend of features might help inform the design of languages I create in the future.</p>
 
       
     </div>
