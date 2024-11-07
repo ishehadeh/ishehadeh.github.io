@@ -6,8 +6,15 @@
     <description>Recent content on Ian&#39;s Website</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 05 Nov 2024 19:12:00 -0400</lastBuildDate>
+    <lastBuildDate>Thu, 07 Nov 2024 18:12:00 -0400</lastBuildDate>
     <atom:link href="http://ian.shehadeh.net/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Why Write a Programming Language</title>
+      <link>http://ian.shehadeh.net/posts/02-precise-integers/</link>
+      <pubDate>Thu, 07 Nov 2024 18:12:00 -0400</pubDate>
+      <guid>http://ian.shehadeh.net/posts/02-precise-integers/</guid>
+      <description>What does it mean to make a programming language</description>
+    </item>
     <item>
       <title>Why Write a Programming Language</title>
       <link>http://ian.shehadeh.net/posts/01-why-pl/</link>
