@@ -1,0 +1,36 @@
+---
+title: Ian's Website
+selectedMenuItem: null
+menu:
+  - title: Blog
+    target: /blog
+  - title: Portfolio
+    target: /portfolio
+  - title: Current
+    target: /current
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ '/styles/main.css' | url }}">
+  </head>
+  <body>
+    <header>
+      <h1>
+        <a href="/">Ian's Website</a>
+      </h1>
+      <menu>
+        {% for header in menu %}
+          <a href="{{ header.target }}" {{ "class=selected" if header.title == selectedMenuItem }}>{{ header.title }}</a>
+        {% endfor %}
+      </menu>
+    </header>
+    <main>
+      {{ content | safe }}
+    </main>
+  </body>
+</html>

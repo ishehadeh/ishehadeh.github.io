@@ -1,0 +1,99 @@
+
+/* Font Family: Kalam
+ * License: OFL (see: ../fonts/Kalam/OFL.txt)
+ * A nice hand-written typeface, used for the header
+ */
+@font-face {
+    font-family: "Kalam";
+    font-weight: bold;
+    src: url("../fonts/Kalam/Kalam-Bold.ttf");
+}
+@font-face {
+    font-family: "Kalam";
+    font-weight: normal;
+    src: url("../fonts/Kalam/Kalam-Regular.ttf");
+}
+@font-face {
+    font-family: "Kalam";
+    font-weight: light;
+    src: url("../fonts/Kalam/Kalam-Light.ttf");
+}
+
+/* remove default body padding in margin, so inner elements aren't mysteriously indented */
+body {
+    padding: 0;
+    margin: 0;
+
+    --fg: #111;
+    --bg: #efefef;
+
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: 'Times New Roman', Times, serif
+}
+
+/* The header for the entire web page (as apposed to section headers */
+body > header {
+    display: flex;
+    flex-flow: row wrap;
+    padding: 0.75rem 1vw;
+    justify-content: space-between;
+    row-gap: 1rem;
+}
+
+/* the website title */
+body > header h1 {
+    font-size: 4rem;
+    font-family: 'Kalam';
+    font-weight: normal;
+    padding: 0 3vw;
+    margin: 0;
+    padding: 0;
+    text-wrap: nowrap;
+}
+
+/* clear default link styles in the website title */
+body > header h1 > a {
+    text-decoration: none;
+    color: var(--fg);
+}
+
+
+
+body > header > menu {
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-template-rows: 1fr;
+
+    grid-auto-flow: column;
+    align-items: center;
+
+    column-gap: 5vw;
+    align-self: end;
+    margin: 0 3vw;
+    padding: 0;
+    flex: 0 1 auto;
+}
+
+menu > a {
+    display: block;
+    color: var(--fg);
+    text-decoration: none;
+    font-size: 1.5rem;
+    padding: 4pt 1vw;
+    width: 100%;
+    text-align: center;
+    border-bottom: 2px solid var(--fg);
+}
+
+menu > a.selected {
+    border-bottom: 4px solid var(--fg);
+    margin-bottom: -2px;
+}
+
+main {
+    font-size: 2rem;
+    max-width: 600px;
+    margin: auto;
+    padding:  10pt 10pt
+}

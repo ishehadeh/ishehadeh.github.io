@@ -1,0 +1,25 @@
+[tools]
+deno = "1.44.4"
+vale = "3.9.3"
+
+[tasks.serve]
+run = """
+    deno run --allow-net=0.0.0.0:8080 \
+             --allow-env \
+             --allow-sys=cpus \
+             --allow-read=./,"$HOME/.cache/deno/node_modules","$HOME/.cache/node_modules","$HOME/node_modules","/home/node_modules","/node_modules" \
+             --allow-write=_site/ \
+             npm:@11ty/eleventy --serve --port 8080
+"""
+
+[tasks.build]
+run = """
+    deno run --allow-env \
+             --allow-sys=cpus \
+             --allow-read=./,"$HOME/.cache/deno/node_modules","$HOME/.cache/node_modules","$HOME/node_modules","/home/node_modules","/node_modules" \
+             --allow-write=_site/ \
+             npm:@11ty/eleventy
+"""
+
+[tasks.lint]
+run = "vale ./www/"
