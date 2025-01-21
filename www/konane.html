@@ -1,0 +1,3022 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Kōnane</title>
+
+    <script type="text/javascript" id="Testing Utilites">
+        /* First we're going set up a few utilities for verifying our math is correct.
+         * This script allows us to register a test with
+         *             
+         *       test("my test", (t) => { t.assert(....) });
+         * 
+         * Then, later all registered tests can be run with `runTests()`;
+         */
+
+        class TestFailure extends Error { }
+
+        class TestCtx {
+            assert(condition, message = "assert failed") {
+                if (!condition) {
+                    throw new TestFailure(message)
+                }
+            }
+
+            assertEq(lhs, rhs, message = "assert failed", lhsName = "lhs", rhsName = "rhs") {
+                if (typeof lhs !== typeof rhs) {
+                    throw new TestFailure(`${message}: ${lhsName} !== ${rhsName} [type mismatch]; left=${lhs}, right=${rhs}`);
+                }
+                if (lhs instanceof PartialOrder && rhs instanceof PartialOrder) {
+                    if (lhs.partialCompare(rhs) !== 0) {
+                        throw new TestFailure(`${message}: ${lhsName} !== ${rhsName} [partialCompare]; left=${lhs}, right=${rhs}`);
+                    }
+                    return;
+                }
+                switch (typeof lhs) {
+                    case "object":
+                        if (lhs != null && rhs != null) {
+                            for (const [k, v] of Object.entries(lhs)) {
+                                assertEq(v, rhs[k], message, `${lhsName}.${k}`, `${rhsName}.${k}`)
+                            }
+                            break;
+                        }
+                    // fallthrough: primitive compare works on null
+                    case "number":
+                        if (Number.isNaN(lhs) && Number.isNaN(rhs)) return;
+                    default:
+                        if (lhs !== rhs) {
+                            throw new TestFailure(`${message}: ${lhsName} !== ${rhsName} [primitive equality]; left=${lhs}, right=${rhs}`);
+                        }
+                }
+            }
+        }
+
+        class TestSet {
+            /** Ordered map of tests registered with TestSet.add()
+             * @type {Map<string, () => void>}
+             */
+            #tests = new Map();
+            constructor() { }
+
+            /** add a test to the list
+             * @param {string} name
+             * @param {(t: TestCtx) => void} test callback function to run the test
+             */
+            add(name, test) {
+                this.#tests.set(name, test);
+            }
+
+            /** Run all tests that match the given pattern
+             * @param {string | RegExp} pattern
+             * @returns {Map<string, Error | true>}
+             */
+            run(pattern = undefined) {
+                const failures = new Map();
+                for (const [name, test] of this.#tests.entries()) {
+                    if (pattern === undefined || pattern === null || name.match(pattern)) {
+                        try {
+                            test(new TestCtx);
+                            failures.set(name, true);
+                        } catch (e) {
+                            failures.set(name, e);
+                        }
+                    }
+                }
+
+                return failures
+            }
+        }
+
+        const _gTestSet = new TestSet();
+
+        /** add to the global test set.
+         * 
+         * @param {string} name
+         * @param {(t: TestCtx) => void} test callback function to run the test
+         */
+        function test(name, op) {
+            return _gTestSet.add(name, op);
+        }
+
+        /** Run all tests that match `pattern` in the global test set.
+         *  Write results to via console.log()
+         * 
+         * @param {RegExp | string | undefined} pattern
+         */
+        function runTests(pattern = undefined) {
+            const failures = _gTestSet.run(pattern);
+            console.log("Test Results");
+            for (const [name, result] of failures.entries()) {
+                if (result === true) {
+                    console.log(`  ${name}... ok`);
+                } else {
+                    console.log(`  ${name}... failed`, result);
+                }
+            }
+        }
+    </script>
+
+    <script type="text/javascript" id="Utilities">
+        /* misc functions that we'll use throughout the following scripts
+         */
+
+        /** Verify that `n` is a bigint or number, cast n to BigInt and copy it
+         * 
+         * @param {any} n
+         * @param {string} name  how the value (n) is referenced in errors
+         * @throws {TypeError}
+         * @returns bigint
+         */
+        function requireInteger(n, name = "value") {
+            if (typeof n != "number" && typeof n != "bigint") {
+                throw new TypeError(`expected ${name} to be numeric, got ${n}`)
+            }
+            if (typeof n == "number" && !Number.isInteger(n)) {
+                throw new TypeError(`expected ${name} to be an integer, got ${n}`)
+            }
+
+            return Object.freeze(BigInt(n));
+        }
+        test("requireInteger copies bigint", (t) => {
+            let a = 0n;
+            let b = requireInteger(a);
+            a += 1n;
+            t.assertEq(a, 1n);
+            t.assertEq(b, 0n);
+        })
+
+        /**
+         * @typedef {"black" | "white" | "empty"} TileState
+         */
+
+        /** Verify that `state` is a valid tile state string or number
+         * 
+         * @param {any} state
+         * @throws {TypeError}
+         * @returns {TileState}
+         */
+        function requireStateString(state) {
+            switch (state) {
+                case 0n:
+                case 0:
+                case "empty":
+                    return "empty"
+                case 1n:
+                case 1:
+                case "black":
+                    return "black"
+                case 2n:
+                case 2:
+                case "white":
+                    return "white"
+                default:
+                    throw new TypeError(`expected tile state to be "empty", "black", "white" (or equivalently 0, 1, 2), but got '${state}'`)
+            }
+        }
+
+
+        /** Compare two BigInts
+         * 
+         * @param {bigint} lhs
+         * @param {bigint} rhs
+         * @returns {Ordering}
+         */
+        function compareBigInt(lhs, rhs) {
+            if (lhs < rhs) {
+                return -1;
+            } else if (lhs > rhs) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+
+        /** Take the absolute value of a BigInt
+         * @param {bigint} value
+         * @return {bigint}
+         */
+        function absBigInt(value) {
+            if (value < 0) { return value * -1n }
+            else { return value }
+        }
+
+        /** Get the first power of two <= n
+         * @param {bigint} n
+         * @returns {bigint}
+         */
+        function powerOfTwoLessOrEqual(n) {
+            let bit = 1n;
+            while ((bit ^ n) != 0) {
+                n &= ~bit;
+                bit <<= 1n;
+            }
+            return n
+        }
+
+        /** Get the first power of two < n
+         * @param {bigint} n
+         * @returns {bigint}
+         */
+        function powerOfTwoLess(n) {
+            let bit = 1n;
+            while (bit < n) {
+                bit *= 2n;
+            }
+            bit /= 2n;
+            return bit;
+        }
+    </script>
+
+
+    <script type="text/javascript" id="Combinatorial Game Theory Primitives">
+        /** 
+         * @typdef {-1 | 0 | 1} Ordering
+         * @typdef {Ordering | NaN} PartialOrdering
+         */
+
+        /** Marks child classes as partially (optionally) comparable
+         * @interface
+         */
+        class PartialOrder {
+            /** 
+             * @returns {PartialOrdering}
+             * @abstract
+             */
+            partialCompare(rhs) {
+                throw Error("Not Implemented: Order.partialCompare");
+            }
+        }
+
+
+        /** Marks child classes as comparable. 
+         * @interface
+         * @implements {PartialOrder}
+         */
+        class Order extends PartialOrder {
+            /** Returns -1 if `this < rhs`, 1 if `this > rhs` or 0 if `this == rhs`.
+             *  Implementing this interface implies that any two object's of the implementor's
+             *  type fall into one of the above cases (<, >, or ==).
+             * 
+             *  @returns {Order}
+             *  @abstract
+             */
+            compare(rhs) {
+                throw Error("Not Implement: Order.compare");
+            }
+
+            partialCompare(rhs) {
+                return this.compare(rhs)
+            }
+        }
+
+        class CanonicalForm extends PartialOrder {
+            /** @type {CanonicalForm[]} */
+            get leftMoves() { throw new Error("Not Implemented"); }
+            /** @type {CanonicalForm[]} */
+            get rightMoves() { throw new Error("Not Implemented"); }
+
+            /** @returns {DyadicRational | null} */
+            asNumber() { throw new Error("Not Implemented"); }
+            /** @returns {bigint | null} */
+            asNimber() { throw new Error("Not Implemented"); }
+
+            /** @returns {DyadicRational} */
+            leftStop() {
+                const num = this.asNumber();
+                if (num != null) { return num; }
+                // Lessons in Play, Definition 6.9:
+                //  LS(G) = G              if G is a number,
+                //        | max(RS(Gᴸ))    otherwise
+
+                /** @type {DyadicRational | null} */
+                let max = null;
+
+                for (const l of this.leftMoves) {
+                    const lRS = l.rightStop();
+                    if (max == null || max.compare(lRS) == -1) {
+                        max = l;
+                    }
+                }
+                return max;
+            }
+
+            /** @returns {DyadicRational} */
+            rightStop() {
+                const num = this.asNumber();
+                if (num != null) { return num; }
+                // Lessons in Play, Definition 6.9:
+                //  RS(G) = G              if G is a number,
+                //        | max(LS(Gᴿ))    otherwise
+
+                /** @type {DyadicRational | null} */
+                let min = null;
+
+                for (const r of this.rightMoves) {
+                    const rLS = r.leftStop();
+                    if (min == null || min.compare(rLS) == 1) {
+                        min = r;
+                    }
+                }
+                return min;
+            }
+
+
+            /** 
+             * @param {CanonicalForm} rhs
+             * @returns {PartialOrdering}
+             */
+            partialCompare(rhs) {
+                if (!(rhs instanceof CanonicalForm)) {
+                    throw new TypeError("expected an instance of CanonicalForm")
+                }
+                // TEMPERATURE THEORY AND THE THERMOSTATIC STRATEGY, Karen Ye
+                // https://www.math.uchicago.edu/~may/VIGRE/VIGRE2009/REUPapers/Ye.pdf
+                // Definition 2.3: An equivalent definition of inequality is that G ≥ H if and only
+                // if there is no option Hᴸ such that Hᴸ ≥ G and there is no option Gᴿ such that
+                // Gᴿ ≤ H
+                const rhsL = rhs.leftMoves;
+                const rhsR = rhs.rightMoves;
+                const lhsL = this.leftMoves;
+                const lhsR = this.rightMoves;
+
+                let isLt = false;
+                // Check: "no option Hᴸ such that Hᴸ ≥ G"
+                for (const hL of rhsL) {
+                    if (hL.partialCompare(this) >= 0) {
+                        isLt = true;
+                        break;
+                    }
+                }
+
+                if (!isLt) {
+                    // Check: " no option Gᴿ such that Gᴿ ≤ H"
+                    for (const gR of lhsR) {
+                        if (gR.partialCompare(rhs) <= 0) {
+                            isLt = true;
+                            break;
+                        }
+                    }
+                }
+
+                // check the inverse, H >= G
+                let isGt = false;
+
+                // Check: "no option Gᴸ such that Gᴸ ≥ H"
+                for (const gL of lhsL) {
+                    if (gL.partialCompare(rhs) >= 0) {
+                        isGt = true;
+                        break;
+                    }
+                }
+
+                if (!isGt) {
+                    // Check: " no option Hᴿ such that Hᴿ ≤ G"
+                    for (const hR of rhsR) {
+                        if (hR.partialCompare(this) <= 0) {
+                            isGt = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!isGt && !isLt) {
+                    // !(this < rhs) && !(this > rhs) ==> this == rhs
+                    return 0;
+                } else if (isGt && !isLt) {
+                    return 1;
+                } else if (isLt && !isGt) {
+                    return -1;
+                } else {
+                    return NaN;
+                }
+            }
+        }
+
+        /** A rational in the form m/(2^n), where m is an integer, and n is an integer >= 0
+         * 
+         * @implements {Order}
+         */
+        class DyadicRational extends CanonicalForm {
+            /** the "m" in m/(2^n)
+             * @type {bigint}
+             */
+            #numerator
+
+            /** the "n" in m/(2^n)
+             * INVARIANT: #denominatorExp >= 0
+             * @type {bigint}
+             */
+            #denominatorExp
+
+            get leftMoves() {
+                const l = this.left();
+                return l ? [l] : [];
+            }
+
+            get rightMoves() {
+                const r = this.right();
+                return r ? [r] : [];
+            }
+
+            /**
+             * 
+             * @param {bigint | number} numerator
+             * @param {bigint | number} denominatorExp must be greater than or equal to zero
+             */
+            constructor(numerator, denominatorExp = 0n) {
+                super();
+
+                this.#numerator = requireInteger(numerator);
+                this.#denominatorExp = requireInteger(denominatorExp);
+                if (this.#denominatorExp < 0n) {
+                    throw new Error(`invalid dyadic rational (${this}): denominator must be greater than or equal to zero.`);
+                }
+                this.normalize();
+            }
+
+            /** Construct a Dyadic Rational from a string, bigint, or number
+             *
+             * @param {string | number | bigint | boolean} value
+             * @returns {DyadicRational}
+             * @throws {TypeError}
+             */
+            static from(value) {
+                if (value instanceof DyadicRational) {
+                    return new DyadicRational(value.numerator, value.denominatorExp);
+                }
+
+                switch (typeof value) {
+                    case "bigint":
+                        return new DyadicRational(value);
+                    case "boolean":
+                        return new DyadicRational(value ? 1n : 0n);
+                    case "number":
+                        return new DyadicRational(value);
+                    case "string":
+                        return new DyadicRational(BigInt(value))
+                    default:
+                        throw new TypeError(`cannot coerce value "${value}" to a DyadicRational`);
+                }
+            }
+
+            get numerator() { return this.#numerator; }
+            get denominatorExp() { return this.#denominatorExp; }
+
+            /** Calculate the real denominator.
+             * @returns {bigint}
+             */
+            denominator() { return 2n ** this.denominatorExp; }
+
+            toString() {
+                if (this.denominatorExp == 0n) {
+                    return this.numerator.toString();
+                } else {
+                    return `${this.numerator}/${this.denominator()}`;
+                }
+            }
+
+            clone() {
+                return DyadicRational.from(this);
+            }
+
+            compare(rhs) {
+                let compatRhs = DyadicRational.from(rhs);
+                let compatLhs = this;
+                if (compatRhs.denominatorExp < this.denominatorExp) {
+                    compatRhs = compatRhs.clone();
+                    compatRhs.#increaseDenom(this.denominatorExp);
+                } else if (compatRhs.denominatorExp > this.denominatorExp) {
+                    compatLhs = compatLhs.clone();
+                    compatLhs.#increaseDenom(compatRhs.denominatorExp);
+                }
+
+                return compareBigInt(compatLhs.numerator, compatRhs.numerator);
+            }
+
+            #increaseDenom(denomExp) {
+                const denomExpBig = requireInteger(denomExp);
+                if (this.#denominatorExp > denomExpBig) {
+                    throw new Error(`denomator must be increased! new dominator is '${denomExpBig}', but value is ${this}`)
+                }
+                const diff = denomExpBig - this.denominatorExp;
+                this.#numerator *= (2n ** diff);
+                this.#denominatorExp = denomExpBig;
+            }
+
+            /** Simplify the fraction, this operation should be run after construction, or any arithmetic.
+             */
+            normalize() {
+                while (this.#denominatorExp > 0n && (this.#numerator % 2n) == 0n) {
+                    this.#denominatorExp -= 1n;
+                    this.#numerator /= 2n;
+                }
+            }
+
+            neg() {
+                this.#numerator *= -1n;
+            }
+
+            /** shorthand to check if the numerator is zero
+             *  @returns {boolean}
+             */
+            isZero() {
+                return this.numerator == 0n;
+            }
+
+            /** Get the right options
+             * @return {DyadicRational | null}
+             */
+            right() {
+                // 2 cases here
+                //  1. This is a whole number, so N = {|N + 1} or N = {N - 1|}, or N = 0
+                if (this.denominatorExp === 0n) {
+                    // if the number is < 0 then only right has options
+                    if (this.numerator < 0n) {
+                        return new DyadicRational(this.numerator + 1n, 0n);
+                    } else {
+                        // right has no options if N >= 0
+                        return null;
+                    }
+                }
+
+                // 2. this is a fraction, so (2p + 1)/(2^m+1) = {p/(2^m) | (p + 1)/(2^m)}
+                // Ref: https://mathstrek.blog/2012/08/15/combinatorial-game-theory-vii/, "More Fractions"
+                return new DyadicRational((this.numerator - 1n) / 2n + 1n, this.denominatorExp - 1n);
+            }
+
+            /** Get the left options
+             * @return {DyadicRational | null}
+             */
+            left() {
+                // 2 cases here
+                //  1. This is a whole number, so N = {|N + 1} or N = {N - 1|}, or N = 0
+                if (this.denominatorExp === 0n) {
+                    // if the number is > 0 then only left has options
+                    if (this.numerator > 0n) {
+                        return new DyadicRational(this.numerator - 1n, 0n);
+                    } else {
+                        // left has no options if N <= 0
+                        return null;
+                    }
+                }
+
+                // 2. this is a fraction, so (2p + 1)/(2^m+1) = {p/(2^m) | (p + 1)/(2^m)}
+                // Ref: https://mathstrek.blog/2012/08/15/combinatorial-game-theory-vii/, "More Fractions"
+                return new DyadicRational((this.numerator - 1n) / 2n, this.denominatorExp - 1n);
+            }
+
+            /** Add rhs to this rational, return a reference to self.
+             * 
+             * @param {DyadicRational} rhs
+             * @returns {DyadicRational}
+             */
+            add(rhs) {
+                // make sure we match denominators
+                let compatRhs = DyadicRational.from(rhs);
+                if (compatRhs.denominatorExp < this.denominatorExp) {
+                    compatRhs = compatRhs.clone();
+                    compatRhs.#increaseDenom(this.denominatorExp);
+                } else if (compatRhs.denominatorExp > this.denominatorExp) {
+                    this.#increaseDenom(compatRhs.denominatorExp);
+                }
+
+                this.#numerator += compatRhs.numerator
+                this.normalize();
+                return this;
+            }
+
+
+            /** subtract rhs to this rational, return a reference to self.
+             * 
+             * @param {DyadicRational} rhs
+             * @returns {DyadicRational}
+             */
+            sub(rhs) {
+                const rhsRat = DyadicRational.from(rhs);
+                rhsRat.neg();
+                this.add(rhsRat);
+                return this;
+            }
+        }
+        test("Dyadic rational addition", (t) => {
+            const rat = (n, d) => new DyadicRational(n, d);
+
+            t.assertEq(rat(2).add(1).compare(3), 0);
+            t.assertEq(rat(1, 1).add(1).compare(rat(3, 1)), 0);
+            t.assertEq(rat(3, 1).add(rat(1, 3)).compare(rat(13, 3)), 0);
+        });
+
+        test("Dyadic rational compare", (t) => {
+            const rat = (n, d) => new DyadicRational(n, d);
+
+            t.assertEq(rat(2).compare(1), 1);
+            t.assertEq(rat(1, 1).compare(rat(3, 1)), -1);
+            t.assertEq(rat(-1, 1).compare(rat(1, 1)), -1);
+            t.assertEq(rat(3, 1).compare(1), 1);
+            t.assertEq(rat(-3, 1).compare(-1), -1);
+        });
+
+
+        test("Dyadic rational left/right moves", (t) => {
+            const rat = (n, d) => new DyadicRational(n, d);
+
+            t.assertEq(rat(2).left(), rat(1));
+            t.assertEq(rat(2).right(), null);
+
+            t.assertEq(rat(-2).left(), null);
+            t.assertEq(rat(-2).right(), rat(-1));
+
+            t.assertEq(rat(3, 1).left(), rat(1));
+            t.assertEq(rat(3, 1).right(), rat(2));
+
+            t.assertEq(rat(-3, 1).left(), rat(-2));
+            t.assertEq(rat(-3, 1).right(), rat(-1));
+        });
+
+
+
+
+        /** Sum of a dyadic rational number m/(2^n), an positive or negative infinitesimal (up), and a Nimber (star)
+         * @prop {bigint} up
+         * @prop {bigint} star
+         * @prop {DyadicRational} number
+         */
+        class NumberUpStar extends CanonicalForm {
+            #number
+            #up
+            #star
+
+            // expose properties as get-only
+            // we'll handle any mutation to avoid invalid states.
+
+            get number() { return this.#number }
+            get up() { return this.#up }
+            get star() { return this.#star }
+
+            get leftMoves() {
+                return [...this.generateLeftOptions()]
+            }
+            get rightMoves() {
+                return [...this.generateRightOptions()]
+            }
+
+            constructor(number = 0n, up = 0n, star = 0n) {
+                super();
+
+                this.#number = DyadicRational.from(number);
+                this.#up = requireInteger(up, "up component");
+                this.#star = requireInteger(star, "nimber");
+                if (this.#star < 0) {
+                    throw new Error(`invalid NumberUpStar (${this}): star must be greater than or equal to zero.`);
+                }
+            }
+
+            /** Try to coerce an arbirary value into a NumberUpStar
+             * 
+             * @param {any} value
+             * @returns {NumberUpStar}
+             * @throws {TypeError}
+             */
+            static coerce(value) {
+                if (value instanceof DyadicRational) {
+                    return new NumberUpStar(value)
+                } else if (value instanceof NumberUpStar) {
+                    return value;
+                }
+                if (typeof value == "object" && value != null && value != undefined) {
+                    for (const key of Object.keys(value)) {
+                        if (!["n", "u", "s", "number", "up", "star"].includes(key)) {
+                            throw new TypeError("Object keys must be one of 'number', 'up', or 'star' (or 'n', 'u', 's' for short). recieved: " + JSON.stringify(value));
+                        }
+                    }
+                    const number = value["number"] ?? value["n"];
+                    const up = value["up"] ?? value["u"];
+                    const star = value["star"] ?? value["s"];
+                    return new NumberUpStar(DyadicRational.from(number ?? 0), up, star)
+                }
+
+                switch (typeof value) {
+                    case "bigint":
+                    case "number":
+                    case "boolean":
+                        return new NumberUpStar(DyadicRational.from(value));
+                    default:
+                        throw new TypeError(`cannot coerce NumberUpStar from '${value}' (typeof value = ${typeof value})`);
+                }
+            }
+
+            partialCompare(rhsRaw) {
+                if (rhsRaw instanceof MoveSet) {
+                    return super.partialCompare(rhsRaw);
+                }
+
+                // source: Lessons In Play, Observation 5.41, pg. 101.
+                const rhs = NumberUpStar.coerce(rhsRaw);
+                const numCmp = this.number.compare(rhs.number);
+                const upCmp = compareBigInt(this.up, rhs.up);
+                const starCmp = compareBigInt(this.star, rhs.star);
+
+                // equality is easy...
+                if (numCmp == 0 && upCmp == 0 && starCmp == 0) {
+                    return 0;
+                }
+
+                // numbers take precedence over infinitesimals
+                if (numCmp != 0) {
+                    // for any positive number x:
+                    //  1) -x < ^ < x
+                    //  2) -x < -^ < x
+                    //  3) -x < * < x
+                    // so if either number is non-zero (implies by them not being equal)
+                    // the difference between the numbers will overpower infinitesimals
+                    return numCmp
+                }
+
+
+                // +/-^ is incomparable with *
+                if (absBigInt(this.up) == 1n && rhs.up == 0n && rhs.star != 0n) {
+                    return NaN
+                }
+                if (absBigInt(rhs.up) == 1n && this.up == 0n && this.star != 0n) {
+                    return NaN
+                }
+
+                // everything is equal except (maybe) star, so these values are incomparable
+                if (upCmp == 0) {
+                    return NaN
+                } else {
+                    // with the exception of +/-^1, up overrules star
+                    return upCmp
+                }
+            }
+
+            /** If the up and star components are zero return a DyadicRational, otherwise return null
+             * @returns {DyadicRational | null}
+             */
+            asNumber() {
+                if (this.up == 0n && this.star == 0n) {
+                    return this.number
+                } else {
+                    return null;
+                }
+            }
+
+            /** If the niumber and up components are zero return the star component, otherwise return null
+             * @returns {bigint | null}
+             */
+            asNimber() {
+                if (this.up == 0n && this.number == 0n) {
+                    return this.star
+                } else {
+                    return null;
+                }
+            }
+
+            *generateRightOptions() {
+                const numRight = this.number.right();
+                const upRight = this.up > 0 ? new NumberUpStar(0, this.up - 1n, 1) : (this.up < 0 ? NumberUpStar.coerce(0n) : null);
+                // player moves on number:
+                if (numRight != null) {
+                    yield new NumberUpStar(numRight, this.up, this.star);
+                }
+
+                // player moves on up game
+                if (upRight) {
+                    yield upRight;
+                }
+
+                // player moves on star game
+                if (this.star != 0n) {
+                    for (let i = 0n; i < this.star; ++i) {
+                        yield new NumberUpStar(this.number, this.up)
+                    }
+                }
+            }
+
+            *generateLeftOptions() {
+                const numLeft = this.number.left();
+                const upLeft = this.up < 0 ? new NumberUpStar(0, this.up + 1n, 1) : (this.up > 0 ? NumberUpStar.coerce(0n) : null);
+
+                // player moves on number:
+                if (numLeft != null) {
+                    yield new NumberUpStar(numLeft, this.up, this.star);
+                }
+
+                // player moves on up game
+                if (upLeft) {
+                    yield upLeft;
+                }
+
+                // player moves on star game
+                if (this.star != 0n) {
+                    for (let i = 0n; i < this.star; ++i) {
+                        yield new NumberUpStar(this.number, this.up)
+                    }
+                }
+            }
+
+            toString() {
+                if (this.number == 0n && this.up == 0n && this.star == 0n) {
+                    return "0";
+                }
+                let str = "";
+                if (!this.number.isZero()) {
+                    str += this.number.toString();
+                }
+                if (this.up != 0n) {
+                    if (str) { str += " + " }
+                    if (this.up != 1n && this.up != -1n) {
+                        str += absBigInt(this.up).toString();
+                    }
+                    if (this.up > 0) {
+                        str += "↑";
+                    } else {
+                        str += "↓";
+                    }
+                }
+                if (this.star != 0n) {
+                    if (str) { str += " + " }
+                    str += "*"
+                    if (this.star != 1) {
+                        str += this.star.toString();
+                    }
+                }
+                return str;
+            }
+
+            clone() {
+                return new NumberUpStar(this.number, this.up, this.star)
+            }
+        }
+
+        test("NumberUpStar comparison 0 || *", (t) => {
+            let zero = new NumberUpStar(0, 0, 0);
+            let star = new NumberUpStar(0, 0, 1);
+
+            t.assertEq(zero.partialCompare(star), NaN);
+        })
+
+        test("NumberUpStar compares up & up move set with star", (t) => {
+            let up = new NumberUpStar(0, 1, 0);
+            let down = new NumberUpStar(0, -1, 0);
+            let star = new NumberUpStar(0, 0, 1);
+
+            t.assertEq(star.partialCompare(up), NaN);
+            t.assertEq(star.partialCompare(down), NaN);
+            t.assertEq(new MoveSet([new NumberUpStar(0)], [down]), star);
+        })
+
+        test("NumberUpStar compares up with rational move set", (t) => {
+            const b = canonicalForm([new DyadicRational(11, 2)], [new DyadicRational(1, 1)]);
+
+            t.assertEq(new DyadicRational(2).partialCompare(b), NaN);
+            t.assertEq(new DyadicRational(2).partialCompare(new DyadicRational(11, 2)), -1);
+        })
+
+        /** A list of left and right player moves
+         * @implements {PartialOrder}
+         */
+        class MoveSet extends CanonicalForm {
+            left;
+            right;
+
+            /**
+             * @param {(MoveSet | NumberUpStar)[]} left
+             * @param {(MoveSet | NumberUpStar)[]} right
+             */
+            constructor(left, right) {
+                super();
+
+                this.left = left;
+                this.right = right;
+            }
+
+            clone() {
+                return new MoveSet([...this.leftMoves], [...this.rightMoves]);
+            }
+
+            /** Returns true if neither player has any options
+             * @returns {boolean}
+             */
+            isZero() {
+                return this.left.length == 0 && this.right.length == 0;
+            }
+
+            /** Bypass reversible moves for the left player
+             */
+            bypassReversibleL() {
+                for (let i = 0; i < this.left.length; ++i) {
+                    for (const lR of this.left[i].rightMoves) {
+                        if (lR.partialCompare(this) <= 0) {
+                            let moves = [...lR.leftMoves];
+                            if (moves.length > 0) {
+                                this.left[i] = moves[0];
+                                if (moves.length > 1) {
+                                    this.left.push(...moves.slice(1));
+                                }
+                            } else {
+                                this.left.splice(i, 1);
+                                i -= 1;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            toString() {
+                let str = "{ ";
+                for (const l in this.left) {
+                    str += this.left[l].toString();
+                    if (l == this.left.length - 1) {
+                        if (this.right.length == 0) {
+                            str += "| }"
+                        } else {
+                            str += " | "
+                        }
+                    } else {
+                        str += ", "
+                    }
+                }
+                if (this.left.length == 0) {
+                    str += "| ";
+                }
+
+                for (const r in this.right) {
+                    str += this.right[r].toString();
+                    if (r == this.right.length - 1) {
+                        str += " }"
+                    } else {
+                        str += ", "
+                    }
+                }
+                return str;
+            }
+
+
+            /** Bypass reversible moves for the right player
+             */
+            bypassReversibleR() {
+                for (let i = 0; i < this.right.length; ++i) {
+                    for (const rL of this.right[i].leftMoves) {
+                        if (rL.partialCompare(this) >= 0) {
+                            let moves = [...rL.rightMoves];
+                            if (moves.length > 0) {
+                                this.right[i] = moves[0];
+                                if (moves.length > 1) {
+                                    this.right.push(...moves.slice(1));
+                                }
+                            } else {
+                                this.right.splice(i, 1);
+                                i -= 1;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            /** Remove dominated moves from a single side.
+             * @param {boolean} left  true to remove dominated left moves, false to remove dominated right moves
+             */
+            removeDominatedMoves(left) {
+                const moves = [];
+                const existingMoves = left ? this.left : this.right;
+                if (existingMoves.length == 1) {
+                    return;
+                }
+
+                for (const m of existingMoves) {
+                    let insert = true;
+                    for (const i in moves) {
+                        const cmp = m.partialCompare(moves[i]);
+                        if (!Number.isNaN(cmp)) {
+                            // since we have some ordering with an existing move
+                            // there's no need to add this one.
+                            insert = false;
+
+                            if (cmp == 0 || (left && cmp == -1) || (!left && cmp == 1)) {
+                                // skip moves which already have a better move in the list
+                                break;
+                            } else {
+                                // this move is better than the existing move so add it
+                                moves[i] = m;
+                                break;
+                            }
+                        }
+                    }
+                    if (insert) {
+                        moves.push(m);
+                    }
+                }
+
+                if (left) {
+                    this.left = moves;
+                } else {
+                    this.right = moves;
+                }
+            }
+
+            get leftMoves() {
+                return this.left.map((m) => m.clone());
+            }
+            get rightMoves() {
+                return this.right.map((m) => m.clone());
+            }
+
+            normalize() {
+                this.removeDominatedMoves(true);
+                this.removeDominatedMoves(false);
+
+                this.bypassReversibleL();
+                this.bypassReversibleR();
+
+                return this.asNus() ?? this;
+            }
+
+            asNimber() {
+                if (this.isImpartial()) {
+                    let nimbers = null;
+                    for (const l of this.leftMoves) {
+                        const nimber = l.asNimber();
+                        if (nimber == null) {
+                            nimbers = null;
+                            break;
+                        } else {
+                            if (nimbers == null) {
+                                nimbers = new Set([nimber])
+                            } else {
+                                nimbers.add(nimber);
+                            }
+                        }
+                    }
+                    if (nimbers != null) {
+                        let mex = 0n;
+                        while (nimbers.has(mex)) {
+                            mex += 1n;
+                        }
+                        return new NumberUpStar(0, 0, mex)
+                    }
+                }
+                return null;
+            }
+
+            asNus() {
+                const num = this.asNumber();
+                if (num) {
+                    return new NumberUpStar(num);
+                }
+                const up = this.asUpStar() ?? this.asUp();
+                if (up) {
+                    return up;
+                }
+
+                if (this.isImpartial()) {
+                    if (this.leftMoves.length == 1) {
+                        const number = this.leftMoves[0].asNumber();
+                        if (number != null) {
+                            return new NumberUpStar(number, 0, 1)
+                        }
+                    }
+
+                    return this.asNimber()
+                }
+
+                if (this.rightMoves.length == 0 && this.leftMoves.length > 0) {
+                    let left = this.leftMoves
+                    let zeroCmp = left[0].partialCompare(new NumberUpStar(0));
+                    for (const l in left.slice(1)) {
+                        const lZeroCmp = left[0].partialCompare(new NumberUpStar(0));
+                        if (lZeroCmp != zeroCmp) {
+                            zeroCmp = null;
+                            break;
+                        }
+                    }
+                    if (zeroCmp == -1) {
+                        return new NumberUpStar(0)
+                    }
+                }
+                if (this.leftMoves.length == 0 && this.rightMoves.length > 0) {
+                    let left = this.rightMoves
+                    let zeroCmp = left[0].partialCompare(new NumberUpStar(0));
+                    for (const l in left.slice(1)) {
+                        const lZeroCmp = left[0].partialCompare(new NumberUpStar(0));
+                        if (lZeroCmp != zeroCmp) {
+                            zeroCmp = null;
+                            break;
+                        }
+                    }
+                    if (zeroCmp == -1) {
+                        return new NumberUpStar(0)
+                    }
+                }
+            }
+
+            /** Check if left == right
+             * @returns {boolean}
+             */
+            isImpartial() {
+                for (const gL of this.leftMoves) {
+                    let found = false;
+                    for (const gR of this.rightMoves) {
+                        if (gR.partialCompare(gL) == 0) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found == false) return false;
+                }
+                return true;
+            }
+
+            /** Try to conver this into a NumberUpStar where up and star are equal to 1 
+             * i.e. return n + ^ +  * if {n,n*|n} or n + -^ + * if {n|n,n*}
+             */
+            asUpStar() {
+                let a1, a2;
+                let b1;
+                let star;
+
+                if (this.left.length == 2 && this.right.length == 1) {
+                    [a1, a2] = this.left;
+                    [b1] = this.right;
+                    star = 1n;
+                } else if (this.left.length == 1 && this.right.length == 2) {
+                    [a1, a2] = this.right;
+                    [b1] = this.left;
+                    star = -1n
+                }
+
+
+                if (a1 instanceof NumberUpStar && a2 instanceof NumberUpStar && b1 instanceof NumberUpStar) {
+                    if (a1.number == a2.number && b1.number == a1.number && b1.up == 0n && a1.up == 0n && l2.up == 0n) {
+                        if ((a1.star == 0n && a2.star == 1n) || (a2.star == 0n && a1.star == 1n)) {
+                            return new NumberUpStar(a1.number, star, 1n);
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            /** returns a NumberUpStar if the game is in the form {0|G}, if G is a NumberUpStar with up > 0 or {G|0} if up < 0
+             *  or returns ^ if the game is {0|*} or -^ if the game is {*|0}
+             */
+            asUp() {
+                if (this.left.length == 1 && this.right.length == 1) {
+                    let [l] = this.left;
+                    let [r] = this.right;
+                    if (l instanceof NumberUpStar && r instanceof NumberUpStar) {
+                        if (l.number.isZero() && (r.up > 0n || r.star > 0n)) {
+                            return new NumberUpStar(r.number, r.up + 1n, r.star ^ 1n)
+                        }
+                        if (r.number.isZero() && (l.up < 0n || r.star > 0n)) {
+                            return new NumberUpStar(r.number, r.up - 1n, r.star ^ 1n)
+                        }
+                    }
+                }
+            }
+
+            /**
+             * @returns {DyadicRational | null}
+             */
+            asNumber() {
+                let leftMax = null;
+                let rightMin = null;
+                for (const l of this.leftMoves) {
+                    let lNum = l.asNumber();
+                    if (lNum == null) {
+                        return;
+                    }
+                    if (leftMax == null || leftMax.compare(lNum) == -1) {
+                        leftMax = lNum;
+                    }
+                }
+                for (const r of this.rightMoves) {
+                    let rNum = r.asNumber();
+                    if (rNum == null) {
+                        return;
+                    }
+                    if (rightMin == null || rightMin.compare(rNum) == 1) {
+                        rightMin = rNum;
+                    }
+                }
+
+
+                // handle no options for left or right player
+                if (leftMax == null && rightMin == null) {
+                    return new DyadicRational(0);
+                } else if (rightMin == null) {
+                    if (leftMax.numerator < 0) {
+                        return new DyadicRational(0)
+                    } else {
+                        const result = leftMax.clone();
+                        result.add(1);
+                        return result;
+                    }
+                } else if (leftMax == null) {
+                    if (rightMin.numerator > 0) {
+                        return new DyadicRational(0)
+                    } else {
+                        const result = rightMin.clone();
+                        result.sub(1);
+                        return result;
+                    }
+                }
+
+                if (leftMax.compare(rightMin) != -1) {
+                    return null;
+                }
+
+                // 1 (easy case) the simplest number is zero
+                // Source: https://mathstrek.blog/2012/08/15/combinatorial-game-theory-vii/, "Simplicity Rule"
+                if (leftMax.numerator < 0 && rightMin.numerator > 0) {
+                    return new DyadicRational(0);
+                }
+
+                // 2: try to find the smallest denominator
+                let dist = rightMin.clone();
+                let endpointOffset;
+                dist.sub(leftMax);
+                if (dist.numerator == 1) {
+                    // forced to split the rational number
+                    endpointOffset = new DyadicRational(1n, dist.denominatorExp + 1n);
+                } else {
+                    endpointOffset = new DyadicRational(powerOfTwoLess(dist), dist.denominatorExp);
+                }
+
+                if (rightMin.numerator < 0) {
+                    const result = rightMin.clone();
+                    result.sub(endpointOffset);
+                    return result
+                } else {
+                    const result = leftMax.clone();
+                    result.add(endpointOffset);
+                    return result;
+                }
+            }
+        }
+
+        function canonicalForm(left, right) {
+            const canonLeft = [];
+            const canonRight = [];
+            for (const l of left) {
+                if (l instanceof MoveSet) {
+                    canonLeft.push(l.normalize());
+                } else {
+                    canonLeft.push(NumberUpStar.coerce(l))
+                }
+            }
+
+            for (const r of right) {
+                if (r instanceof MoveSet) {
+                    canonRight.push(r.normalize());
+                } else {
+                    canonRight.push(NumberUpStar.coerce(r))
+                }
+            }
+
+            return (new MoveSet(canonLeft, canonRight)).normalize();
+        }
+        test("canonicalForm integration - failure on 12/23/2024", (t) => {
+            // { 0 | { { 2 | { 11/4 | 1/2 } } | { 15/4 | 0 } } }
+            const cf = canonicalForm;
+            const a = cf([new DyadicRational(15, 2)], [0]);
+            const b = cf([new DyadicRational(11, 2)], [new DyadicRational(1, 1)]);
+            const c = cf([2], [b]);
+            const d = cf([c], [a]);
+            const e = cf([0], [d]);
+
+            t.assertEq(canonicalForm([new DyadicRational(5, 1)], [4]), new DyadicRational(3));
+
+            t.assertEq(c.partialCompare(new DyadicRational(11, 2)), -1);
+            t.assertEq(c.partialCompare(new DyadicRational(1, 1)), 1);
+            t.assertEq(d.partialCompare(new DyadicRational(15, 2)), -1);
+            t.assertEq(d.partialCompare(new DyadicRational(15, 2)), -1);
+            t.assertEq(cf([new DyadicRational(5, 1)], [new DyadicRational(15, 2)]), new DyadicRational(3));
+            t.assertEq(d, new NumberUpStar(3));
+            t.assertEq(e, new DyadicRational(1));
+        })
+        test("canonicalForm {0|-^} equiv. *", (t) => {
+
+            const star = canonicalForm([0], [new NumberUpStar(0, -1, 0)]);
+            t.assertEq(star, new NumberUpStar(0, 0, 1));
+            t.assert(star instanceof NumberUpStar);
+        })
+        test("canonicalForm {0,*|0,*} == *2", (t) => {
+            const moveSet = new MoveSet([new NumberUpStar(0), new NumberUpStar(0, 0, 1)], [new NumberUpStar(0), new NumberUpStar(0, 0, 1)])
+
+            t.assertEq(moveSet.partialCompare(new NumberUpStar(0)), NaN);
+            t.assertEq(moveSet.partialCompare(new NumberUpStar(0, 0, 1)), NaN);
+            t.assertEq(moveSet.normalize(), new NumberUpStar(0, 0, 2));
+        })
+
+    </script>
+
+    <script type="text/javascript" id="Konane Mechanics">
+
+        class KonaneMove {
+            #fromX;
+            #fromY;
+            #toY;
+            #toX;
+
+            constructor(fromX, fromY, toX, toY) {
+                this.#fromX = requireInteger(fromX);
+                this.#fromY = requireInteger(fromY);
+                this.#toX = requireInteger(toX);
+                this.#toY = requireInteger(toY);
+
+                if (this.fromX != this.toX && this.fromY != this.toY) {
+                    throw new Error(`moves must be either horizontal or vertical, cannot move from <${this.fromX}, ${this.fromY}> to <${this.toX}, ${this.toY}>`)
+                }
+                if (this.fromX == this.toX && this.fromY == this.toY) {
+                    throw new Error(`move has no effect! move from <${this.fromX}, ${this.fromY}> to <${this.toX}, ${this.toY}>`)
+                }
+            }
+
+            get fromX() { return 0n + this.#fromX }
+            get fromY() { return 0n + this.#fromY }
+            get toX() { return 0n + this.#toX }
+            get toY() { return 0n + this.#toY }
+
+            *clearedCells() {
+                let xDiff = 0n;
+                let yDiff = 0n;
+                if (this.fromX == this.toX) {
+                    yDiff = this.fromY > this.toY ? -1n : 1n
+                } else {
+                    xDiff = this.fromX > this.toX ? -1n : 1n
+                }
+
+                let x = this.fromX;
+                let y = this.fromY;
+                while (x != this.toX || y != this.toY) {
+                    yield { x, y };
+
+                    x += xDiff;
+                    y += yDiff;
+                }
+            }
+        }
+
+        class KonaneMoveGenerator {
+            /**
+             * @param {Konane} game
+             * @param {"black" | "white"} player
+             */
+            constructor(game, player) {
+                if (!(game instanceof Konane)) {
+                    throw new TypeError(`expected 'game' to be an instance of Konane, got '${game}'`);
+                }
+                if (player != "black" && player != "white") {
+                    throw new TypeError(`expected player to be "black" or "white", got '${player}`);
+                }
+
+                this._game = game;
+                this._player = player;
+                this._setDir(0);
+            }
+
+            static empty(game) {
+                const gen = new KonaneMoveGenerator(game, "black");
+                gen._setDir(4);
+                return gen;
+            }
+
+            /** Reset the move list, future advances will be in the given direction
+             * 
+             * @param {0 | 1 | 2 | 3} border the border 0 = "left", 1 = "right", 2 = "down", 3 = "up"
+             * @returns {void}
+             */
+            _setDir(dir) {
+                this._dir = dir;
+                if (this._dir == 4) {
+                    // dir 4 marks the end of the generator
+                    return;
+                }
+
+                this._hops = 0n;
+                this._moveList = this._player == "black" ? this._game._black : this._game._white;
+                this._moveList &= ~this._game._borderMask(dir);
+                this.hop();
+            }
+
+            /** shift the move list over in the current direction
+             * @access private
+             */
+            _shift() {
+                const bits = Number(this._game.width * this._game.height);
+                switch (this._dir) {
+                    case 0:
+                        this._moveList = BigInt.asUintN(bits, this._moveList >> 1n)
+                        break;
+                    case 1:
+                        this._moveList = BigInt.asUintN(bits, this._moveList << 1n)
+                        break;
+                    case 2:
+                        this._moveList = BigInt.asUintN(bits, this._moveList << this._game.width)
+                        break;
+                    case 3:
+                        this._moveList = BigInt.asUintN(bits, this._moveList >> this._game.width)
+                        break;
+                }
+            }
+
+            hop() {
+                if (this._dir == 4 || this._moveList == 0n) { return; }
+
+                this._moveList &= ~this._game._borderMask(this._dir);
+                this._shift();
+                // make sure there's a piece to capture
+                if (this._player == "black") {
+                    this._moveList &= this._game._white;
+                } else {
+                    this._moveList &= this._game._black;
+                }
+
+                this._moveList &= ~this._game._borderMask(this._dir);
+                this._shift();
+                // make sure there's an empty space in the following position
+                this._moveList &= this._game._emptyMask();
+                this._hops += 1n;
+            }
+
+            /** Get a list of [x, y] positions from the current move list
+             * 
+             * @generator
+             * @yields {KonaneMove}
+             */
+            *currentMoves() {
+                if (this._dir == 4) { return; }
+
+                for (let i = 0n; i < this._game.width * this._game.height; ++i) {
+                    if ((this._moveList & (1n << i)) != 0n) {
+                        const toX = i % this._game.width;
+                        const toY = i / this._game.width;
+                        let fromX = toX;
+                        let fromY = toY;
+                        if (this._dir == 0) {
+                            fromX = toX + 2n * this._hops;
+                        }
+                        if (this._dir == 1) {
+                            fromX = toX - 2n * this._hops;
+                        }
+                        if (this._dir == 2) {
+                            fromY = toY - 2n * this._hops;
+                        }
+                        if (this._dir == 3) {
+                            fromY = toY + 2n * this._hops;
+                        }
+                        yield new KonaneMove(fromX, fromY, toX, toY);
+                    }
+                }
+            }
+
+            /** Get a list of [x, y] positions for all remaining moves in the current direction
+             * 
+             * @generator
+             * @yields {KonaneMove}
+             */
+            *allMovesInCurrentDirection() {
+                if (this._dir == 4) { return; }
+
+                while (this._moveList != 0n) {
+                    yield* this.currentMoves();
+                    this.hop();
+                }
+            }
+
+            /** Get a list of [x, y] positions for all remaining moves
+             * 
+             * @generator
+             * @yields {KonaneMove}
+             */
+            *allMoves() {
+                while (this._dir < 4) {
+                    yield* this.allMovesInCurrentDirection();
+                    this._setDir(this._dir + 1);
+                }
+            }
+        }
+
+        class Konane {
+            /**
+             * @type {Record<Konane, MoveSet|NumberUpStar>}
+             */
+            static #moveCache = {};
+
+            /**
+             * @param {number | bigint} w
+             * @param {number | bigint} h
+             */
+            constructor(w, h) {
+                this._width = requireInteger(w, "width");
+                this._height = requireInteger(h, "height");
+                this._black = BigInt.asUintN(Number(this._width * this._height), 0n);
+                this._white = BigInt.asUintN(Number(this._width * this._height), 0n);
+            }
+
+            /** Build a game from a string where "x" is black, "o" is white, "_" is empty and any whitespace character marks a move to the next row
+             * 
+             * @param {string} boardStr
+             * @throws {TypeError}
+             * @throws {Error} invalid character in input
+             * @returns {Konane}
+            */
+            static fromString(boardStr) {
+                if (typeof (boardStr) != "string") {
+                    throw new TypeError(`expected board to be a string, got "${boardStr}"`)
+                }
+                const rowStrs = boardStr.trim().split(/\s+/).map(row => row.trim());
+                const h = rowStrs.length;
+                const w = Math.max(...rowStrs.map(r => r.length));
+                const board = new Konane(w, h);
+
+                for (let y = 0n; y < h; ++y) {
+                    for (let x = 0n; x < rowStrs[y].length; ++x) {
+                        switch (rowStrs[y][x]) {
+                            case '_':
+                                break;
+                            case 'x':
+                                board.setTile(x, y, "black");
+                                break;
+                            case 'o':
+                                board.setTile(x, y, "white");
+                                break;
+                            default:
+                                throw new Error(`unexpected character in state string: "${rowStrs[y][x]}" (full: "${str}")`)
+                        }
+                    }
+                }
+                return board;
+            }
+
+            /** Convert a 2D tile coordinate into the equivalent index into the tile bitmap
+             * 
+             * @access private
+             * @param {bigint | number} x
+             * @param {bigint | number} y
+             * @throws {Error} thrown if coordinate is out of bounds
+             * @throws {TypeError} x or y are not numeric or integer-like
+             * @returns {bigint}
+             */
+            _tileIndex(x, y) {
+                const bigX = requireInteger(x, "x coordinate");
+                const bigY = requireInteger(y, "y coordinate");
+                if (bigX >= this.width || bigY >= this.height) {
+                    throw Error(`tile coordinate <${x}, ${y}> is out of bounds for a ${this.width}x${this.height} board`);
+                }
+
+                return bigX + (bigY * this._width);
+            }
+
+            /** Get a bitboard with every element set to 1
+             * 
+             * @access private
+             * @returns {bigint}
+             */
+            _boardMask() {
+                return ~BigInt.asUintN(Number(this._width * this._height), 0n)
+            }
+
+            /** Get a bitboard with the all elements in the n'th row set to 1
+             * 
+             * @param {bigint | number} n
+             * @access private
+             * @throws {TypeError} 
+             * @throws {Error} n is out of bounds
+             * @returns {bigint}
+             */
+            _rowMask(n = 0n) {
+                const bigN = requireInteger(n, "column index");
+                if (bigN >= this.height) {
+                    throw new Error(`row index '${n}' is out of bounds for board size ${this.width}x${this.height}`);
+                }
+                let mask = BigInt.asUintN(Number(this._width * this._height), 0n);
+                for (let x = 0; x < this.width; ++x) {
+                    mask |= 1n << this._tileIndex(x, n);
+                }
+                return mask;
+            }
+
+            /** Get a bitboard with the all elements in the n'th column set to 1
+             * 
+             * @param {bigint | number} n
+             * @access private
+             * @returns {bigint}
+             */
+            _columnMask(n = 0n) {
+                const bigN = requireInteger(n, "column index");
+                if (bigN >= this.width) {
+                    throw new Error(`column index '${n}' is out of bounds for board size ${this.width}x${this.height}`);
+                }
+                let mask = BigInt.asUintN(Number(this._width * this._height), 0n);
+                for (let y = 0; y < this.height; ++y) {
+                    mask |= 1n << this._tileIndex(n, y);
+                }
+                return mask;
+            }
+
+            /** Get a bit mask for the given border
+             * 
+             * @param {0 | 1 | 2 | 3} border the border 0 = "left", 1 = "right", 2 = "down", 3 = "up"
+             * @returns {bigint}
+             * @access private
+             */
+            _borderMask(border) {
+                switch (border) {
+                    case 0:
+                        return this._columnMask(0);
+                    case 1:
+                        return this._columnMask(this.width - 1n);
+                    case 2:
+                        return this._rowMask(this.height - 1n);
+                    case 3:
+                        return this._rowMask(0);
+                    default:
+                        throw new Error(`invalid value for border, expect [0, 3], got ${border}`)
+                }
+            }
+
+            /** Get a bit board with a 1 in all empty spaces
+             * @returns {bigint}
+             */
+            _emptyMask() {
+                return ~(this._white | this._black)
+            }
+
+            get width() { return this._width; }
+            get height() { return this._height; }
+
+            /** 
+             * get the state of the tile at <x, y>
+             * @param {bigint | number} x
+             * @param {bigint | number} y
+             * @returns {TileState}
+             */
+            setTile(x, y, state) {
+                const bit = 1n << this._tileIndex(x, y);
+                const bitInv = this._boardMask() ^ bit;
+                switch (requireStateString(state)) {
+                    case "black":
+                        this._black |= bit;
+                        this._white &= bitInv;
+                        break;
+                    case "white":
+                        this._white |= bit;
+                        this._black &= bitInv;
+                        break;
+                    case "empty":
+                        this._black &= bitInv;
+                        this._white &= bitInv;
+                        break;
+                    default:
+                        throw Error("invalid value from requireStateString: this should be impossible");
+                }
+            }
+
+            /** Set the tile at <x, y> to the given state
+             * @param {bigint | number} x
+             * @param {bigint | number} y
+             * @param {TileState} state
+             * @returns void
+            */
+            getTile(x, y) {
+                const mask = 1n << this._tileIndex(x, y);
+                const isBlack = (this._black & mask) != 0n;
+                const isWhite = (this._white & mask) != 0n;
+                if (isBlack && isWhite) {
+                    throw new Error(`invalid state for tile at <${x}, ${y}>, marked as both black and white`);
+                } else if (isBlack) {
+                    return "black";
+                } else if (isWhite) {
+                    return "white";
+                } else {
+                    return "empty";
+                }
+            }
+
+            /** Get a generator for all moves of the given player
+             * 
+             * @param {"black" | "white"} player
+             * @returns {KonaneMoveGenerator}
+             */
+            moves(player) {
+                return new KonaneMoveGenerator(this, player);
+            }
+
+            /** Get a generator for all moves from the given tile
+             * 
+             * @param {"black" | "white"} player
+             * @generator
+             * @yields {KonaneMove}
+             */
+            *movesFrom(fromX, fromY) {
+                const tileState = this.getTile(fromX, fromY);
+                if (tileState == "empty") {
+                    return
+                }
+
+                for (const move of this.moves(tileState).allMoves()) {
+                    if (move.fromX == fromX && move.fromY == fromY) {
+                        yield move;
+                    }
+                }
+            }
+
+            applyMove(move, player) {
+                for (const { x, y } of move.clearedCells()) {
+                    this.setTile(x, y, "empty");
+                }
+                this.setTile(move.toX, move.toY, player);
+            }
+
+            serialize() {
+                const boardBits = this.width * this.height;
+                let serialized = BigInt.asUintN(Number(boardBits) * 2 + 16, this.width);
+                serialized |= (this.height << 8n);
+                serialized |= (this._black << 16n);
+                serialized |= (this._white << (16n + boardBits));
+                return serialized;
+            }
+
+            canonicalForm() {
+                const serialized = this.serialize();
+                if (!(serialized in Konane.#moveCache)) {
+                    let left = [];
+                    let right = [];
+                    let wipGame = null;
+                    for (const move of this.moves("black").allMoves()) {
+                        wipGame = this.clone();
+                        wipGame.applyMove(move, "black");
+                        left.push(wipGame.canonicalForm());
+                    }
+                    for (const move of this.moves("white").allMoves()) {
+                        wipGame = this.clone();
+                        wipGame.applyMove(move, "white");
+                        right.push(wipGame.canonicalForm());
+                    }
+                    Konane.#moveCache[serialized] = canonicalForm(left, right);
+                }
+
+                return Konane.#moveCache[serialized];
+            }
+
+            toString() {
+                let str = ""
+                for (let y = 0n; y < this.height; ++y) {
+                    for (let x = 0n; x < this.width; ++x) {
+                        switch (this.getTile(x, y)) {
+                            case "black":
+                                str += "x";
+                                break;
+                            case "white":
+                                str += "o";
+                                break;
+                            case "empty":
+                                str += "_"
+                                break;
+                        }
+                    }
+                    if (y != this.height - 1n) {
+                        str += "\n"
+                    }
+                }
+                return str;
+            }
+
+            /** Copy the board state and modify the size.
+             * 
+             * This function only adds rows to the bottom, and columns to the right.
+             * Rows and columns may also be removed.
+             * 
+             * @param {bigint | number} newW
+             * @param {bigint | number} newH
+             * @returns {Konane}
+             */
+            cloneWithSize(newW, newH) {
+                const newGame = new Konane(newW, newH);
+                if (this._black != 0n || this._white != 0n) {
+                    for (let y = 0n; y < this._height; ++y) {
+                        newGame._black |= ((this._black & this._rowMask(y)) >> (this.width * y)) << (y * newW);
+                        newGame._white |= ((this._white & this._rowMask(y)) >> (this.width * y)) << (y * newW);
+                    }
+                }
+                return newGame;
+            }
+
+            /** Create a copy of this game
+             * @returns {Konane}
+             */
+            clone() {
+                const newGame = new Konane(this.width, this.height);
+                newGame._black = this._black;
+                newGame._white = this._white;
+                return newGame;
+            }
+        }
+
+        test("Konane.canonicalForm integration - failure on 12/23/2024", (t) => {
+            const g = Konane.fromString('xo_ox\noxo__\nx_xox\noxoxo');
+            window.TEST = 1;
+            const value = g.canonicalForm();
+
+            t.assert(value instanceof NumberUpStar);
+            t.assertEq(value, new NumberUpStar(0, 1, 0));
+        })
+    </script>
+
+    <template id="template-konane">
+        <style>
+            /* to be aria-friendly we're splitting it into rows */
+            #board {
+                display: grid;
+                grid-template-rows: repeat(var(--konane-height), var(--cell-size, 1fr));
+                /* grid-template-columns: min-content; */
+                background-color: var(--bg);
+                aspect-ratio: var(--konane-width) / var(--konane-height);
+            }
+
+            .row {
+                display: grid inline;
+                grid-template-columns: repeat(var(--konane-width), var(--cell-size, 1fr));
+                aspect-ratio: var(--konane-width) / 1;
+            }
+
+            .cell {
+                border: 1px solid var(--fg);
+                /* min-width: var(--cell-size, 1rem);
+                min-height: var(--cell-size, 1rem); */
+                padding: max(.3rem, 10%);
+            }
+
+            .cell:focus {
+                /* border: 3px solid red; */
+                /* border-image: linear-gradient(to right, var(--fg) 0%, #3a4ed5 100%) 1; */
+                background: color-mix(in srgb, var(--fg) 20%, var(--bg));
+                outline: none;
+            }
+
+            .highlight>div {
+                --line-width: 3pt;
+                --left-stop-0: calc(50% - var(--line-width) / 2);
+                --left-stop-1: calc(0.01% + var(--left-stop-0));
+                --right-stop-1: calc(50% + var(--line-width) / 2);
+                --right-stop-0: calc(0.01% + var(--right-stop-1));
+
+                background:
+                    linear-gradient(45deg, transparent var(--left-stop-0), var(--fg) var(--left-stop-1), var(--fg) var(--right-stop-1), transparent var(--right-stop-0)),
+                    linear-gradient(-45deg, transparent var(--left-stop-0), var(--fg) var(--left-stop-1), var(--fg) var(--right-stop-1), transparent var(--right-stop-0));
+                /* opacity: 50%; */
+                aspect-ratio: 1;
+                margin: 25%;
+            }
+
+            .black {
+                border-radius: 50%;
+                background-color: black;
+                border: 1px solid var(--fg);
+                aspect-ratio: 1;
+            }
+
+            .white {
+                border-radius: 50%;
+                background-color: white;
+                border: 1px solid var(--fg);
+                aspect-ratio: 1;
+            }
+
+            .active {
+                animation: shake 1s cubic-bezier(.36, .07, .19, .97) infinite;
+            }
+
+            @keyframes shake {
+
+                10%,
+                90% {
+                    transform: translate3d(-1px, 1px, 0);
+                }
+
+                20%,
+                80% {
+                    transform: translate3d(2px, -1px, 0);
+                }
+
+                30%,
+                50%,
+                70% {
+                    transform: translate3d(-2px, 1px, 0);
+                }
+
+                40%,
+                60% {
+                    transform: translate3d(2px, -1px, 0);
+                }
+            }
+        </style>
+        <div id="board" tabindex="1" role="grid"></div>
+    </template>
+
+    <script>
+        // Konane Game HTML Element
+        class KonaneHTMLElement extends HTMLElement {
+            static get observedAttributes() {
+                return ["player", "turn"];
+            }
+
+            #innerTextObserver = new MutationObserver(() => {
+                this.refreshBoardState();
+            });
+            #runtimeStyles = new CSSStyleSheet();
+
+            /** 2D grid of HTMLElement tiles encoded as an 1D array.
+             * Prefer {@link KonaneHTMLElement._getTileNode()} to using this property directly.
+             * @type {HTMLElement[]}
+             */
+            #tileMap = []
+
+            /** The color that can be controlled by interacting with the site
+             * @type {["black"] | ["white"] | ["black", "white"] | []}
+             */
+            #interactiveColor = ["black"];
+
+
+            /** The color that can be controlled by interacting with the site
+             * @type {["black"] | ["white"] | ["black", "white"] | []}
+             */
+            get interactiveColors() { return [...this.#interactiveColor] }
+
+            #proposedMoves = [];
+            #history = [];
+            #historyIdx = -1;
+
+            /** The active cell has a minor animation and highlights cells where the occupying stone move.
+             * @type {[bigint, bigint] | null}
+             */
+            #activeCellPosition = null;
+
+            /** The active cell has a minor animation and highlights cells where the occupying stone move.
+             *  This property gets that cell's <x, y> position (top left of the board is <0, 0>), or null if no cell is active
+             * @type {[bigint, bigint] | null}
+             */
+            get activeCellPosition() { return this.#activeCellPosition }
+
+            /** The active cell has a minor animation and highlights cells where the occupying stone move.
+             *  This property gets that cell's HTMLElement, or null if no cell is active.
+             * @type {HTMLElement | null}
+             */
+            get activeCell() {
+                const pos = this.activeCellPosition;
+                if (pos === null) return null;
+                return this._getTileNode(pos[0], pos[1]);
+            }
+
+            /** The focused cell is the one that has been selected using tab focus
+             * @type {[bigint, bigint] | null}
+             */
+            #focusedCellPosition = null;
+
+            /** The focused cell is the one that has been selected using tab focus.
+             *  This property gets that cell's <x, y> position (top left of the board is <0, 0>), or null if no cell is focused
+             * @type {[bigint, bigint] | null}
+             */
+            get focusedCellPosition() { return this.#focusedCellPosition }
+
+            /** The focused cell is the one that has been selected using tab focus.
+             *  This property gets that cell's HTMLElement, or null if no cell is focused
+             * @type {HTMLElement | null}
+             */
+            get focusedCell() {
+                const pos = this.focusedCellPosition;
+                if (pos === null) return null;
+                return this._getTileNode(pos[0], pos[1]);
+            }
+
+            static fromGame(game) {
+                let elem = new KonaneHTMLElement();
+                elem.innerHTML = game.toString();
+                return elem
+            }
+
+            constructor() {
+                super();
+                this.#innerTextObserver.observe(this, { childList: true, characterData: true, characterDataOldValue: true });
+
+                const template = document.getElementById("template-konane").content;
+                const root = template.cloneNode(true);
+
+                const shadowRoot = this.attachShadow({ mode: "open" });
+                shadowRoot.adoptedStyleSheets.push(this.#runtimeStyles);
+                shadowRoot.appendChild(root);
+
+                this.refreshBoardState();
+            }
+
+            attributeChangedCallback(name, oldValue, newValue) {
+                switch (name) {
+                    case "player":
+                        if (!["black", "white", "both", "neither"].includes(newValue)) {
+                            console.warn("invalid value for 'player' attribute", newValue);
+                        } else {
+                            if (newValue == "both") {
+                                this.#interactiveColor = ["black", "white"];
+                            } else if (newValue == "neither") {
+                                this.#interactiveColor = [];
+                            } else {
+                                this.#interactiveColor = [newValue];
+                            }
+                            this.syncAriaRoles();
+                        }
+                        break;
+                    case "turn": {
+                        if (!["black", "white"].includes(newValue)) {
+                            console.warn("invalid value for 'turn' attribute", newValue);
+                            break;
+                        }
+                        this.#history = [[this.game.clone(), newValue]];
+                        this.#proposedMoves = [];
+                        this.#historyIdx = 0;
+                        this.createAllTiles();
+                        this.dispatchEvent(new CustomEvent("game-init", { detail: { state: this.game.clone() } }));
+                        this.updateValue();
+                        break;
+                    }
+                }
+            }
+
+            refreshBoardState() {
+                const boardStr = this.innerHTML == "" ? "__\n__" : this.innerHTML;
+                this.#proposedMoves = [];
+                this.#historyIdx = 0;
+                const currentPlayer = requireStateString(this.getAttribute("turn") ?? "black");
+                this.#history = [[Konane.fromString(boardStr), currentPlayer]];
+
+                this.createAllTiles();
+                this.syncAriaRoles();
+                this.dispatchEvent(new CustomEvent("game-init", { detail: { state: this.game.clone() } }));
+                this.updateValue();
+            }
+
+            #updateCellAriaRole(el) {
+                for (const color of this.#interactiveColor) {
+                    if (el.classList.contains(color)) {
+                        el.setAttribute("role", "button");
+                        return
+                    }
+                }
+                el.removeAttribute("role");
+            }
+
+            syncAriaRoles() {
+                this.shadowRoot.querySelectorAll(".cell").forEach((el) => {
+                    this.#updateCellAriaRole(el);
+                })
+            }
+
+            /** Add a move to the list of highlighted moves.
+             * 
+             * If the current turn is interactable, then these cells can be clicked to take the move 
+             * 
+             * @param {KonaneMove} move  
+             */
+            proposeMove(move) {
+                if (!(move instanceof KonaneMove)) {
+                    throw new TypeError(`expected an instance of KonaneMove, found ${move}`);
+                }
+
+                this.#proposedMoves.push(move);
+                const tile = this._getTileNode(move.toX, move.toY);
+                tile?.parentElement?.classList?.add("highlight");
+                tile?.setAttribute("tabindex", "0");
+            }
+
+            /**
+             * Remove all highlighted moves that were added with proposeMove
+             */
+            clearProposedMoves() {
+                this.#proposedMoves = [];
+                this.shadowRoot
+                    .querySelectorAll(".cell.highlight")
+                    .forEach((cell) => cell.classList.remove("highlight"));
+            }
+
+            updateValue() {
+                this.dispatchEvent(new CustomEvent("game-update", { detail: { player: this.currentPlayer, state: this.game } }));
+            }
+
+            createNewState(player = undefined) {
+                // we don't have any kind of fancy branching history,
+                // so if a new move is made while we're in the middle of the timeline
+                // remove any future moves.
+                if (this.#history.length > this.#historyIdx + 1) {
+                    this.#history = this.#history.slice(0, this.#historyIdx + 1);
+                }
+                this.clearProposedMoves();
+                if (player === undefined) {
+                    player = this.currentPlayer == "black" ? "white" : "black";
+                }
+                this.#history.push([this.game.clone(), player]);
+                this.#historyIdx += 1;
+            }
+
+            activateCell(x, y) {
+                this.deactivateCell();
+                this.#activeCellPosition = [x, y];
+                this.activeCell?.classList?.add("active");
+            }
+
+            deactivateCell() {
+                this.activeCell?.classList?.remove("active");
+                this.#activeCellPosition = null;
+            }
+
+            proposeMovesForCell(x, y) {
+                this.activateCell(x, y);
+                for (const move of this.game.movesFrom(x, y)) {
+                    this.proposeMove(move);
+                }
+            }
+
+            /** Apply a given move
+             *
+             * @param {KonaneMove} move
+             */
+            applyMove(move) {
+                this.dispatchEvent(new CustomEvent("konane-move-begin", { detail: { player: this.currentPlayer, state: this.game, move, } }));
+                if (!(move instanceof KonaneMove)) {
+                    throw new TypeError(`expected an instance of KonaneMove, found ${move}`);
+                }
+                this.createNewState();
+                this.setTileState(move.toX, move.toY, this.game.getTile(move.fromX, move.fromY));
+                for (const { x, y } of move.clearedCells()) {
+                    this.setTileState(x, y, "empty");
+                }
+                this.dispatchEvent(new CustomEvent("konane-move-applied", { detail: { player: this.currentPlayer, state: this.game, move, } }));
+                this.updateValue();
+
+                const currentPlayerHasMoves = !this.game.moves(this.currentPlayer).allMoves().next().done;
+                if (!currentPlayerHasMoves) {
+                    this.dispatchEvent(new CustomEvent("game-complete", { detail: { winner: this.currentPlayer == "black" ? "white" : "black" } }));
+                }
+
+                if (!this.#interactiveColor.includes(this.currentPlayer)) {
+                    this.computerTurn();
+                }
+
+            }
+
+            get history() {
+                return this.#history;
+            }
+
+            get game() {
+                return this.#history[this.#historyIdx][0];
+            }
+
+            get currentPlayer() {
+                return this.#history[this.#historyIdx][1];
+            }
+
+            undo() {
+                if (this.#historyIdx <= 0) {
+                    return;
+                }
+
+                this.#historyIdx -= 1;
+                this.createAllTiles();
+                this.updateValue();
+            }
+
+            reset() {
+                this.refreshBoardState();
+            }
+
+            redo() {
+                if (this.#historyIdx == this.#history.length - 1) {
+                    return;
+                }
+
+                this.#historyIdx += 1;
+                this.createAllTiles();
+                this.updateValue();
+            }
+
+            computerMoveChoice(options) {
+                let best = [0, options[0].canonicalForm()];
+                for (const i in options) {
+                    const canon = options[i].canonicalForm();
+                    const cmpZero = canon.partialCompare(new NumberUpStar(0, 0, 0));
+                    if (cmpZero < 0 || cmpZero == null) {
+                        return i;
+                    }
+
+                    const cmp = canon.partialCompare(best[1]);
+                    if (this.currentPlayer == "black" && cmp > 0) {
+                        best = [i, canon];
+                    } else if (this.currentPlayer == "white" && cmp < 0) {
+                        best = [i, canon];
+                    }
+                }
+
+                return best[0];
+            }
+
+            computerTurn() {
+                const moves = [...this.game.moves(this.currentPlayer).allMoves()];
+                if (moves.length == 0) {
+                    return;
+                }
+                const games = moves.map(m => {
+                    const g = this.game.clone();
+                    g.applyMove(m, this.currentPlayer);
+                    return g;
+                });
+                const chosenMove = this.computerMoveChoice(games);
+                // short delay after the player's move before proposing alternate moves
+                window.setTimeout(() => {
+                    const fromX = moves[chosenMove].fromX;
+                    const fromY = moves[chosenMove].fromY;
+
+                    this.activateCell(fromX, fromY);
+                    moves
+                        .filter(m => m.fromX == fromX && m.fromY == fromY)
+                        .forEach(m => this.proposeMove(m));
+                    window.setTimeout(() => {
+                        this.applyMove(moves[chosenMove], this.currentPlayer);
+                    }, 1000)
+                }, 350)
+            }
+
+            #makeCellLabel(x, y, state) {
+                const STATE_PRETY_SUFFIX = {
+                    "empty": " Empty",
+                    "black": " Black",
+                    "white": " White",
+                };
+                const ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                const ALPHA_LEN = BigInt(ALPHA.length);
+                let label = "";
+                let xRemainder = BigInt(x) + 1n;
+                while (xRemainder > 0) {
+                    label += ALPHA.charAt(Number(xRemainder % ALPHA_LEN));
+                    xRemainder /= BigInt(ALPHA_LEN);
+                }
+                label += (BigInt(y) + 1n).toString();
+                label += STATE_PRETY_SUFFIX[state];
+                return label;
+            }
+
+            _makeTileNode(x, y, state) {
+                x = requireInteger(x, "x coordinate");
+                y = requireInteger(y, "y coordinate");
+                if (!["empty", "black", "white"].includes(state)) {
+                    throw Error(`tried to set node at <${x}, ${y}> to an invalid state: '${state}'`);
+                }
+                const wrapperEl = document.createElement("div");
+                wrapperEl.setAttribute("class", "cell");
+                wrapperEl.ariaLabel = this.#makeCellLabel(x, y, state);
+                wrapperEl.role = "gridcell";
+                wrapperEl.setAttribute("tabindex", "0");
+
+                const stoneEl = document.createElement("div");
+                stoneEl.setAttribute("id", `tile-x${x}y${y}`);
+                stoneEl.setAttribute("class", state);
+                stoneEl.role = "img";
+
+                const handleInteraction = (ev) => {
+                    if (this.#interactiveColor.includes(this.currentPlayer)) {
+                        if (this.#interactiveColor.includes(this.game.getTile(x, y))) {
+                            if (this.#activeCellPosition != null) {
+                                this.clearProposedMoves();
+                                if (this.#activeCellPosition[0] === x && this.#activeCellPosition[1] === y) {
+                                    this.deactivateCell();
+                                    return;
+                                }
+                            }
+                            this.proposeMovesForCell(x, y);
+                        }
+
+                        const proposed = this.#proposedMoves.find((move) => move.toX == x && move.toY == y);
+                        if (proposed instanceof KonaneMove) {
+                            this.applyMove(proposed);
+                            this.clearProposedMoves();
+                        }
+                    }
+                }
+
+                wrapperEl.appendChild(stoneEl);
+                wrapperEl.addEventListener("click", handleInteraction);
+                wrapperEl.addEventListener("keydown", (ev) => {
+                    if (this.#focusedCellPosition !== null && this.#focusedCellPosition[0] === x && this.#focusedCellPosition[1] === y) {
+                        if (ev.code == "Space" || ev.key == "Enter") {
+                            ev.preventDefault();
+                            handleInteraction(ev)
+                        }
+
+                        if (ev.code === "ArrowLeft") {
+                            ev.preventDefault();
+                            for (let x1 = x - 1n; x1 >= 0n; --x1) {
+                                const tile = this.cellAt(x1, y);
+                                if (tile.tabIndex >= 0) {
+                                    tile.focus();
+                                    break;
+                                }
+                            }
+                        }
+                        if (ev.code === "ArrowRight") {
+                            ev.preventDefault();
+                            for (let x1 = x + 1n; x1 < this.game.width; ++x1) {
+                                const tile = this.cellAt(x1, y);
+                                if (tile.tabIndex >= 0) {
+                                    tile.focus();
+                                    break;
+                                }
+                            }
+                        }
+                        if (ev.code === "ArrowUp") {
+                            ev.preventDefault();
+                            for (let y1 = y - 1n; y1 >= 0n; --y1) {
+                                const tile = this.cellAt(x, y1);
+                                if (tile.tabIndex >= 0) {
+                                    tile.focus();
+                                    break;
+                                }
+                            }
+                        }
+                        if (ev.code === "ArrowDown") {
+                            ev.preventDefault();
+                            for (let y1 = y + 1n; y1 < this.game.height; ++y1) {
+                                const tile = this.cellAt(x, y1);
+                                if (tile.tabIndex >= 0) {
+                                    tile.focus();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                });
+                wrapperEl.addEventListener("focusin", (ev) => {
+                    this.#focusedCellPosition = [x, y];
+                });
+                wrapperEl.addEventListener("focusout", (ev) => {
+                    if (this.#focusedCellPosition !== null && this.#focusedCellPosition[0] === x && this.#focusedCellPosition[1] === y) {
+                        this.#focusedCellPosition = null;
+                    }
+                });
+
+                return wrapperEl;
+            }
+
+            _setTileNode(x, y, state) {
+                x = requireInteger(x, "x coordinate");
+                y = requireInteger(y, "y coordinate");
+                if (!["empty", "black", "white"].includes(state)) {
+                    throw Error(`tried to set node at <${x}, ${y}> to an invalid state: '${state}'`);
+                }
+                const node = this._mustGetTileNode(x, y);
+                this.#updateCellAriaRole(node);
+                node.classList.remove("black", "white", "empty");
+                node.classList.add(state);
+                node.classList.add(`col-${x}`);
+                node.classList.add(`row-${y}`);
+                node.ariaLabel = this.#makeCellLabel(x, y, state);
+            }
+
+            _getTileNode(x, y) {
+                return this.cellAt(x, y)?.firstElementChild
+            }
+
+            cellAt(x, y) {
+                x = requireInteger(x, "x coordinate");
+                y = requireInteger(y, "y coordinate");
+
+                return this.#tileMap[y * this.game.width + x];
+            }
+
+            _mustGetTileNode(x, y) {
+                const el = this._getTileNode(x, y)
+                if (!el) {
+                    throw Error(`could not find an element for the tile at <${x}, ${y}>`)
+                }
+                return el;
+            }
+
+            createAllTiles() {
+                this.#runtimeStyles.replaceSync(
+                    `:host {
+                --konane-width: ${this.game.width};
+                --konane-height: ${this.game.height};
+            }`)
+                const nodes = [];
+                const rows = [];
+                for (let y = 0; y < this.game.height; ++y) {
+                    const rowContainer = document.createElement("div");
+                    rowContainer.classList.add("row");
+                    rowContainer.role = "row";
+
+                    for (let x = 0; x < this.game.width; ++x) {
+                        let node = this._makeTileNode(x, y, this.game.getTile(x, y));
+                        rowContainer.appendChild(node);
+                        nodes.push(node);
+                    }
+                    rows.push(rowContainer);
+                }
+                this.shadowRoot.getElementById("board").replaceChildren(...rows)
+                this.#tileMap = nodes;
+            }
+
+
+            setTileState(x, y, state) {
+                this.game.setTile(x, y, state)
+                this._setTileNode(x, y, state);
+            }
+        }
+
+        /** A class which holds an element selected using a query selector
+         * 
+         * If the element isn't immediately available, then the DOM is monitored until it appears
+         */
+        class TargetElement {
+            #watchedSelector = null;
+            #watchedElem = null;
+            #elemObserver = new MutationObserver((_) => {
+                this.#tryUpdateWatchedElem();
+            });
+            #callback
+
+            /**
+             * @param {(oldElem: HTMLElement | null, newElem: HTMLElement) => void} targetChangeCb
+             */
+            constructor(targetChangeCb) {
+                this.#callback = targetChangeCb
+            }
+
+            /** @type {HTMLElement | null } */
+            get element() { return this.#watchedElem }
+
+            /** target the first element that matches the given query selector
+             * @param {string} selector
+             */
+            target(selector) {
+                if (typeof selector !== "string") {
+                    throw new TypeError(`expected string, got "${selector}" [type: ${typeof selector}]`)
+                }
+
+                this.#watchedSelector = selector;
+                this.#tryUpdateWatchedElem();
+            }
+
+            #tryUpdateWatchedElem() {
+                const oldWatchedElem = this.#watchedElem;
+                this.#watchedElem ??= document.querySelector(this.#watchedSelector);
+                if (this.#watchedElem !== null) {
+                    this.#elemObserver.disconnect();
+                    this.#callback(oldWatchedElem, this.#watchedElem);
+                } else {
+                    this.#elemObserver.observe(document.body, { childList: true, subtree: true });
+                }
+            }
+        }
+
+        class CGTValue extends HTMLElement {
+            static observedAttributes = ["for"]
+
+            #eventListener = (ev) => this.#updateFromGameState(ev.detail.state)
+            #target = new TargetElement((oldElem, newElem) => {
+                oldElem?.removeEventListener("game-update", this.#eventListener)
+                newElem.addEventListener("game-update", this.#eventListener);
+                if (newElem instanceof KonaneHTMLElement) {
+                    this.#updateFromGameState(newElem.game);
+                } else {
+                    console.warn("invalid target for cgt-value element ", newElem)
+                }
+            })
+
+            constructor() {
+                super();
+            }
+
+            #updateFromGameState(state) {
+                const cf = state.canonicalForm();
+                this.innerText = cf.toString();
+            }
+
+            attributeChangedCallback(attr, oldVal, newVal) {
+                if (attr === "for") {
+                    this.#target.target(newVal);
+                }
+            }
+        }
+
+        customElements.define("cgt-konane", KonaneHTMLElement);
+        customElements.define("cgt-value", CGTValue);
+
+        function undo(elem) {
+            document.querySelector(elem)?.undo();
+        }
+        function redo(elem) {
+            document.querySelector(elem)?.redo();
+        }
+        function reset(elem) {
+            document.querySelector(elem)?.reset();
+        }
+    </script>
+
+    <style id="core-styles">
+        /* Inherited from Concrete CSS */
+        :root {
+            --fg: #111;
+            --bg: #fff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --fg: #fff;
+                --bg: #111;
+            }
+        }
+
+        html {
+            font-size: 1.25rem;
+            box-sizing: border-box;
+        }
+
+        p {
+            text-wrap: stable;
+        }
+
+        *,
+        ::after,
+        ::before {
+            box-sizing: inherit;
+            text-decoration-thickness: .1rem;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 1.2rem;
+        }
+
+        main section+section {
+            padding: 2rem 0;
+        }
+
+        body>header,
+        body>main,
+        body>footer {
+            margin: auto;
+            padding: 0 12px;
+            max-width: 780px;
+        }
+
+        a {
+            text-decoration: none;
+            font-style: italic;
+            color: var(--fg);
+        }
+
+        a:link {
+            color: var(--fg);
+        }
+    </style>
+
+    <style id="Figure Styles">
+        figure {
+            /* border: 1px solid var(--fg); */
+            padding: 12pt;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        main {
+            counter-reset: example 0 figure 0;
+        }
+
+        figure:not(.example) {
+            counter-increment: figure;
+            overflow: visible;
+            margin: 10pt auto 10pt auto;
+        }
+
+        figure.example {
+            counter-increment: example;
+            overflow: visible;
+            margin: 10pt auto 10pt auto;
+        }
+
+        figure:not(.example) figcaption::before {
+            content: "Fig. " counter(figure);
+            margin-right: 1rem;
+            font-style: italic;
+        }
+
+        figure.example figcaption::before {
+            content: "Ex. " counter(example);
+            margin-right: 0.5rem;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        figcaption + * {
+            margin-top: -1.5rem;
+            margin-bottom: 0.35rem;
+            background-color: var(--bg);
+            padding-right: 10pt;
+            padding-left: 10pt;
+            font-size: 1rem;
+            width: fit-content;
+        }
+
+        * figcaption {
+            margin-bottom: -1.5rem;
+            margin-top: 0.35rem;
+            background-color: var(--bg);
+            padding-right: 10pt;
+            padding-left: 10pt;
+            font-size: 1rem;
+            width: fit-content;
+        }
+    </style>
+
+    <style>
+        button {
+            padding: .2rem .4rem;
+            font-size: 1.2rem;
+            font-weight: normal;
+            background: var(--bg);
+            color: var(--fg);
+            border: .1rem solid var(--fg);
+            border-radius: 0;
+            cursor: pointer;
+            vertical-align: middle;
+            text-align: center;
+            margin: auto;
+            display: inline-block;
+        }
+
+        button.undo::before {
+            content: "⟵";
+            padding: 0 4pt 0 4pt;
+        }
+
+        button.reset::before {
+            content: "⟳";
+            padding: 0 4pt 0 4pt;
+        }
+
+        button.redo::after {
+            content: "⟶";
+            padding: 0 4pt 0 4pt;
+        }
+
+        .game-toolbar-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 6fr;
+            grid-template-rows: 1fr;
+            align-items: center;
+            column-gap: 8pt;
+        }
+
+        .game-toolbar-row button {
+            width: 100%;
+        }
+
+        .game-toolbar-row cgt-value {
+            text-align: right;
+        }
+
+        .flex-column-center {
+            display: flex;
+            flex-flow: column;
+            justify-content: center;
+        }
+
+        hr.separater-h {
+            margin-top: 16pt;
+            margin-bottom: 12pt;
+        }
+    </style>
+
+
+    <style id="Game Tree Styles">
+        .tree-grid {
+            display: inline-grid;
+            grid-template-columns: repeat(auto-fill, var(--tree-node-size, 1cm));
+            grid-template-rows: repeat(auto-fill, var(--tree-node-size, 1cm));
+            row-gap: calc(var(--tree-node-size, 1cm) * 0.4);
+            column-gap: calc(var(--tree-node-size, 1cm) * 0.4);
+        }
+
+
+        .tree-grid .node {
+            color: var(--bg);
+            border-radius: 50%;
+            display: flex;
+            font-size: min(8pt, calc(var(--tree-node-size, 1cm) * 0.5));
+            width: var(--tree-node-size, 1cm);
+            height: var(--tree-node-size, 1cm);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            /* line-height: 1.2rem; */
+            aspect-ratio: 1 / 1;
+            grid-column-start: var(--x1, 1);
+            grid-row-start: var(--y1, 1);
+            background-color: var(--fg);
+        }
+
+        .tree-grid .node.highlight::before {
+            color: var(--fg);
+            position: absolute;
+            content: "▼";
+            transform: rotate(40deg) translateY(calc(-0.5 * (var(--tree-node-size, 1cm) + 12pt)));
+            transform-origin: bottom center;
+            text-align: center;
+            font-size: small;
+        }
+
+        .tree-grid div[at^="a" i] {
+            --y1: 1
+        }
+
+        .tree-grid div[at^="b" i] {
+            --y1: 2
+        }
+
+        .tree-grid div[at^="c" i] {
+            --y1: 3
+        }
+
+        .tree-grid div[at^="d" i] {
+            --y1: 4
+        }
+
+        .tree-grid div[at^="e" i] {
+            --y1: 5
+        }
+
+        .tree-grid div[at^="f" i] {
+            --y1: 6
+        }
+
+        .tree-grid div[at^="g" i] {
+            --y1: 7
+        }
+
+        .tree-grid div[at^="h" i] {
+            --y1: 8
+        }
+
+        .tree-grid div[at^="i" i] {
+            --y1: 9
+        }
+
+        .tree-grid div[at$="1" i] {
+            --x1: 1
+        }
+
+        .tree-grid div[at$="2" i] {
+            --x1: 2
+        }
+
+        .tree-grid div[at$="3" i] {
+            --x1: 3
+        }
+
+        .tree-grid div[at$="4" i] {
+            --x1: 4
+        }
+
+        .tree-grid div[at$="5" i] {
+            --x1: 5
+        }
+
+        .tree-grid div[at$="6" i] {
+            --x1: 6
+        }
+
+        .tree-grid div[at$="7" i] {
+            --x1: 7
+        }
+
+        .tree-grid div[at$="8" i] {
+            --x1: 8
+        }
+
+        .tree-grid div[at$="9" i] {
+            --x1: 9
+        }
+
+
+        .tree-grid div[end^="a" i] {
+            --y2: 1
+        }
+
+        .tree-grid div[end^="b" i] {
+            --y2: 2
+        }
+
+        .tree-grid div[end^="c" i] {
+            --y2: 3
+        }
+
+        .tree-grid div[end^="d" i] {
+            --y2: 4
+        }
+
+        .tree-grid div[end^="e" i] {
+            --y2: 5
+        }
+
+        .tree-grid div[end^="f" i] {
+            --y2: 6
+        }
+
+        .tree-grid div[end^="g" i] {
+            --y2: 7
+        }
+
+        .tree-grid div[end^="h" i] {
+            --y2: 8
+        }
+
+        .tree-grid div[end$="1" i] {
+            --x2: 1
+        }
+
+        .tree-grid div[end$="2" i] {
+            --x2: 2
+        }
+
+        .tree-grid div[end$="3" i] {
+            --x2: 3
+        }
+
+        .tree-grid div[end$="4" i] {
+            --x2: 4
+        }
+
+        .tree-grid div[end$="5" i] {
+            --x2: 5
+        }
+
+        .tree-grid div[end$="6" i] {
+            --x2: 6
+        }
+
+        .tree-grid div[end$="7" i] {
+            --x2: 7
+        }
+
+        .tree-grid div[end$="8" i] {
+            --x2: 8
+        }
+
+        .tree-grid div[end$="9" i] {
+            --x2: 9
+        }
+
+        .tree-grid .link {
+            grid-column-start: min(var(--x1), var(--x2));
+            grid-column-end: calc(max(var(--x1), var(--x2)) + 1);
+            grid-row-start: min(var(--y1), var(--y2));
+            grid-row-end: calc(max(var(--y1), var(--y2)) + 1);
+            background-color: var(--fg);
+
+            display: block;
+            background-color: transparent;
+            text-align: center;
+            font-size: 0.7rem;
+            z-index: -1;
+            transform: rotate(calc(45deg * (var(--y2) - var(--y1)) / (var(--x2) - var(--x1))));
+            display: grid;
+            grid-template-columns: 100%;
+            grid-template-rows: 1fr 4px 1fr;
+            justify-content: center;
+            align-items: center;
+            color: var(--fg);
+        }
+
+        .tree-grid .link::before {
+            grid-row: 2;
+            width: 100%;
+            height: 100%;
+            display: block;
+            content: '';
+            background-color: var(--fg);
+        }
+
+        .scream {
+            text-transform: uppercase;
+        }
+    </style>
+
+    <style id="alignment-styles">
+        /* Center align the content of elements with this class, horizontal.
+         *
+         */
+        .center.horizontal:not(.stack) {
+            display: flex;
+            align-items: center;
+            flex-flow: column nowrap;
+        }
+
+        /* Put as many child elements in a horizontal row as possible */
+        .stack.horizontal {
+            display: flex;
+            flex-flow: row wrap;
+        }
+
+        .stack.horizontal.center {
+            align-items: center;
+        }
+    </style>
+
+
+    <style id="Main Content Sizing">
+        /* by default, use roughly 2x character-sized Konane cells */
+        cgt-konane {
+            --cell-size: 2em;
+        }
+
+        /* Longer lines are generally easier to read, IMO, so force paragraphs to be at least 400px (up to divide width) */
+        p {
+            min-width: min(400px, 100%);
+        }
+    </style>
+
+    <style id="varied-emphasis-styles">
+        .emph-low {
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <section id="introduction">
+            <h1>Let's Play Kōnane&hellip;</h1>
+
+            <div>
+                <figure id="ex1" class="example">
+                    <cgt-value for="#ex1 cgt-konane"></cgt-value>
+                    <cgt-konane controls="right">
+                        oxox
+                        x_xo
+                        o_ox
+                        xoxo
+                    </cgt-konane>
+                    <figcaption>Kōnane</figcaption>
+                </figure>
+
+                <p>
+                    Kōnane is an ancient Hawaiian game in the vein of checkers.
+                    <a href="#ex1">Ex. 1</a> is playable, if you click (or tap) on one of the black pieces, the game will highlight available moves.
+                </p>
+
+
+                <p>
+                    Here's the rule: on your turn, you must <i>jump</i> over <i>one or more</i> of your opponents pieces, in single direction, into an empty space, thus remove's your opponents pieces from play.
+                </p>
+                <div class="stack horizontal">
+                    <figure id="ex2" class="example">
+                        <cgt-konane controls="right">
+                            _____
+                            _____
+                            ___ox
+                            _____
+                        </cgt-konane>
+                        <figcaption>One Jump</figcaption>
+                    </figure>
+
+                    <figure id="ex3" class="example">
+                        <cgt-konane controls="right">
+                            _____
+                            _____
+                            _o_ox
+                            _____
+                        </cgt-konane>
+                        <figcaption>Two Jumps</figcaption>
+                    </figure>
+                </div>
+
+                <p>
+                    The first player that can't move on their turn loses. 
+                    <a href="#ex2">Ex. 2</a> and <a href="#ex3">Ex. 3</a> showcase the <i>jumping</i> mechanic.
+                    Try moving in those games by clicking on the black piece.
+                </p>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>
