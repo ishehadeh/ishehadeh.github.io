@@ -17,6 +17,16 @@ menu:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ '/styles/main.css' | url }}">
+
+    {% if selectedMenuItem != null %}
+      <link href="/" rel="prefetch"/>
+    {% endif %}
+    {% for header in menu %}
+      {# Prefetch the 3 menu pages #}
+      {% if header.title != selectedMenuItem %}
+        <link href="{{ header.target }}" rel="prefetch"/>
+      {% endif %}
+    {% endfor %}
   </head>
   <body>
     <header>
