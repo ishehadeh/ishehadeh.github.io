@@ -34,11 +34,32 @@ body {
 
 /* The header for the entire web page (as apposed to section headers */
 body > header {
-    display: flex;
-    flex-flow: row wrap;
     padding: 0.75rem 1vw;
-    justify-content: space-between;
-    row-gap: 1rem;
+		justify-content: space-between;
+}
+
+/* header: screens with a lot of width */
+@media (min-width: 800px) {
+	body > header {
+		display: grid;
+		/* columns:           website title | spacer | menu bar */
+		grid-template-columns: auto auto;
+		grid-template-areas: "title" "menu";
+		grid-template-rows: 1fr;
+	}
+}
+
+@media (max-width: 800px) {
+	body > header {
+		display: grid;
+		/* rows:           website title
+									     menu bar */
+		grid-template-rows: auto auto;
+		grid-template-areas: "title"
+						   					 "menu";
+		grid-template-columns: 1fr;
+		row-gap: 8pt;
+	}
 }
 
 /* the website title */
@@ -50,6 +71,8 @@ body > header h1 {
     margin: 0;
     padding: 0;
     text-wrap: nowrap;
+		text-align: center;
+		grid-area: "title";
 }
 
 /* clear default link styles in the website title */
@@ -76,7 +99,9 @@ body > header > menu {
     align-self: end;
     margin: 0 3vw;
     padding: 0;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+
+		grid-area: "menu";
 }
 
 menu > a {
