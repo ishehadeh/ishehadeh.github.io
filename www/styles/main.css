@@ -60,9 +60,13 @@ body > header h1 > a {
 
 
 
+/* Core menu bar styles */
 body > header > menu {
     display: grid;
-    grid-auto-columns: 1fr;
+
+		/* allow any number of columns (i.e. each menu item has its own column) */
+		grid-auto-columns: 1fr;
+
     grid-template-rows: 1fr;
 
     grid-auto-flow: column;
