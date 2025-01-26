@@ -42,9 +42,9 @@ body > header {
 @media (min-width: 800px) {
 	body > header {
 		display: grid;
-		/* columns:           website title | spacer | menu bar */
 		grid-template-columns: auto auto;
 		grid-template-areas: "title" "menu";
+
 		grid-template-rows: 1fr;
 	}
 }
@@ -52,11 +52,10 @@ body > header {
 @media (max-width: 800px) {
 	body > header {
 		display: grid;
-		/* rows:           website title
-									     menu bar */
 		grid-template-rows: auto auto;
 		grid-template-areas: "title"
 						   					 "menu";
+
 		grid-template-columns: 1fr;
 		row-gap: 8pt;
 	}
@@ -121,8 +120,36 @@ menu > a.selected {
 }
 
 main {
-    font-size: 2rem;
-    max-width: 600px;
+    font-size: 1.4rem;
+    max-width: 800px;
     margin: auto;
     padding:  10pt 10pt
+}
+
+
+a.ico-github::before {
+	background-image: url("/assets/github-mark/github-mark.svg");
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  content: "";
+  background-size: 1.5rem 1.5rem;
+}
+
+
+
+.portfolio-entry {
+	margin: 4rem 0;
+}
+
+
+.portfolio-entry > header {
+	display: flex;
+	flex-flow: row wrap;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.portfolio-entry > header h1 {
+	margin: 0;
 }
