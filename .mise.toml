@@ -1,6 +1,7 @@
 [tools]
 deno = "2.1.5"
 vale = "3.9.3"
+jj = "latest"
 
 [tasks.serve]
 run = """
