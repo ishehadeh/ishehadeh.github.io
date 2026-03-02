@@ -24,8 +24,11 @@ body {
     padding: 0;
     margin: 0;
 
-    --fg: #111;
-    --bg: #efefef;
+    --fg: oklch(0.1776 0 0);
+    --bg: oklch(0.9521 0 0);
+
+    --link-color: oklch(60% 0.1 270);
+    --link-color-active: oklch(70% 0.1 270);
 
     background-color: var(--bg);
     color: var(--fg);
@@ -124,6 +127,17 @@ main {
     max-width: 800px;
     margin: auto;
     padding:  10pt 10pt
+}
+
+/* general purpose link styles */
+main a {
+    color: var(--link-color);
+}
+
+/* make links just a tad brighter when clicked */
+main a:active {
+    color: var(--link-color-active);
+
 }
 
 
