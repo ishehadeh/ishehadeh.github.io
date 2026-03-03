@@ -1,0 +1,13 @@
+---
+title: Blog
+layout: layouts/base.njk
+selectedMenuItem: Blog
+---
+
+<section id="blog">
+    <h2 class="main-header">{{ title }}</h2>
+
+    <article>
+        {{ content | safe }}
+    </article>
+</section>
