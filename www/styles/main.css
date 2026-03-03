@@ -150,6 +150,10 @@ a.ico-github::before {
   background-size: 1.5rem 1.5rem;
 }
 
+/* indent paragraphs a little bit */
+p {
+    text-indent: 1rem;
+}
 
 
 .portfolio-entry {
@@ -166,4 +170,15 @@ a.ico-github::before {
 
 .portfolio-entry > header h1 {
 	margin: 0;
+}
+
+/* Call to Action styles */
+.cta {
+    display: block;
+    padding: 0.5rem 1rem;
+}
+
+.cta::before {
+    content: "→";
+    margin-right: 0.5rem;
 }
