@@ -151,8 +151,12 @@ a.ico-github::before {
 }
 
 /* indent paragraphs a little bit */
-p {
+p:not(.no-indent) {
     text-indent: 1rem;
+}
+
+p.lead {
+    font-size: 1.5rem;
 }
 
 
