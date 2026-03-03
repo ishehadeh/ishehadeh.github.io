@@ -64,6 +64,11 @@ body > header {
 	}
 }
 
+/* give headers the same weight as body text, they should just be large to stand out */
+h2,h3,h4,h5,h6 {
+    font-weight: normal;
+}
+
 /* the website title */
 body > header h1 {
     font-size: 4rem;
@@ -84,8 +89,10 @@ body > header h1 > a {
 }
 
 
+/**************************/
+/* Site-wide Menu Styles  */
+/**************************/
 
-/* Core menu bar styles */
 body > header > menu {
     display: grid;
 
@@ -185,4 +192,34 @@ p.lead {
 .cta::before {
     content: "→";
     margin-right: 0.5rem;
+}
+
+#blog > ol {
+    padding: 0;
+}
+
+#blog > ol > li {
+    list-style: none;
+    padding: 0;
+}
+
+#blog > ol > li > a {
+    margin-left: 1rem;
+}
+
+/* the time in a post's header.
+ * We want to de-emphasize it, so make it smaller, and mix partially with the background color.
+*/
+li.post > time {
+    color: color-mix(in oklch, var(--fg) 60%, var(--bg));
+    margin-left: 1rem;
+}
+
+li.post > a {
+    margin: 0;
+}
+
+/* keep the main content a bit spaced out */
+main {
+    margin-top: 2rem;
 }
