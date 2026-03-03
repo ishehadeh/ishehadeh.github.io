@@ -67,6 +67,8 @@ body > header {
 /* give headers the same weight as body text, they should just be large to stand out */
 h2,h3,h4,h5,h6 {
     font-weight: normal;
+    /* by default, headers have a huge margin, generally we want them closer to the body text */
+    margin: 0;
 }
 
 /* the website title */
@@ -179,10 +181,6 @@ p.lead {
 	justify-content: space-between;
 }
 
-.portfolio-entry > header h1 {
-	margin: 0;
-}
-
 /* Call to Action styles */
 .cta {
     display: block;
@@ -222,4 +220,9 @@ li.post > a {
 /* keep the main content a bit spaced out */
 main {
     margin-top: 2rem;
+}
+
+/* we want the main header to be a bit spaced out from the body text */
+.main-header {
+    margin-bottom: 2rem;
 }
