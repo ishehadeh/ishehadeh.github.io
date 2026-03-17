@@ -192,25 +192,37 @@ p.lead {
     margin-right: 0.5rem;
 }
 
+/* Blog post styles */
 #blog > ol {
     padding: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 1rem;
+    row-gap: 0.35em;
+    align-items: baseline;
 }
 
 #blog > ol > li {
     list-style: none;
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
     padding: 0;
 }
 
 #blog > ol > li > a {
-    margin-left: 1rem;
+    margin-left: 0;
+    min-width: 0; /* allow long titles to wrap within 1fr */
 }
+
 
 /* the time in a post's header.
  * We want to de-emphasize it, so make it smaller, and mix partially with the background color.
 */
 li.post > time {
     color: color-mix(in oklch, var(--fg) 60%, var(--bg));
-    margin-left: 1rem;
+    margin-left: 0;
+    white-space: nowrap;
 }
 
 li.post > a {
