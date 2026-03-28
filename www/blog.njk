@@ -8,7 +8,7 @@ selectedMenuItem: Blog
 
 
     <ol>
-        {% for post in collections.blog %}
+        {% for post in collections.blog | sort(attribute="data.date", reverse=true) %}
             {% if not post.data.draft %}
                 <li class="post" id="{{ post.data.title | slugify }}">
                     <time datetime="{{ post.data.date.toISOString() }}">{{ post.data.date | readableDate }}</time>
