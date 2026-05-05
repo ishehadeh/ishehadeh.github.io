@@ -22,5 +22,15 @@ run = """
              npm:@11ty/eleventy
 """
 
+[tasks.update-resume]
+run = """
+    git clone git@github.com:ishehadeh/resume.git
+    cd resume
+    git checkout {{arg(name="version", default='main')}}
+    cp resume.technical.pdf ../www/assets/shehadeh-ian-resume.pdf
+    cd ..
+    rm -rf resume
+"""
+
 [tasks.lint]
 run = "vale ./www/"
