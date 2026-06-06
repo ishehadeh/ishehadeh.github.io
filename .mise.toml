@@ -27,7 +27,7 @@ run = """
     git clone git@github.com:ishehadeh/resume.git
     cd resume
     git checkout {{arg(name="version", default='main')}}
-    cp resume.technical.pdf ../www/assets/shehadeh-ian-resume.pdf
+    cp "archive/builds/$(ls -1 archive/builds/ | tail -n 1)" ../www/assets/shehadeh-ian-resume.pdf
     cd ..
     rm -rf resume
 """
