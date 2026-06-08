@@ -768,6 +768,33 @@
     });
   }
 
+  const PIXEL_ART_MIN_SCALE = 2;
+  const PIXEL_ART_MIN_DIMENSION_PX = 280;
+
+  /**
+   * Integer upscale for on-screen display; keeps PNG export at native resolution.
+   * @param {number} width
+   * @param {number} height
+   * @returns {number}
+   */
+  function pixelArtDisplayScale(width, height) {
+    const maxDim = Math.max(width, height, 1);
+    const scaleForMinDimension = Math.ceil(PIXEL_ART_MIN_DIMENSION_PX / maxDim);
+    return Math.max(PIXEL_ART_MIN_SCALE, scaleForMinDimension);
+  }
+
+  /**
+   * @param {HTMLCanvasElement} canvas
+   * @param {number} width
+   * @param {number} height
+   * @returns {void}
+   */
+  function applyPixelArtDisplaySize(canvas, width, height) {
+    const scale = pixelArtDisplayScale(width, height);
+    canvas.style.width = `${width * scale}px`;
+    canvas.style.height = `${height * scale}px`;
+  }
+
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {ImageData} imageData
@@ -777,6 +804,7 @@
     canvas.width = imageData.width;
     canvas.height = imageData.height;
     getCanvasContext(canvas).putImageData(imageData, 0, 0);
+    applyPixelArtDisplaySize(canvas, imageData.width, imageData.height);
   }
 
   /** @returns {Promise<void>} */
@@ -969,12 +997,13 @@
   align-items: start;
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(220px, 420px) 1fr;
+  grid-template-columns: minmax(280px, 1fr) 1fr;
 }
 .dc-preview,
 .dc-solution {
   background: repeating-conic-gradient(#dce1de 0% 25%, #ffffff 0% 50%) 50% / 18px 18px;
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
   max-width: 100%;
 }
 .dc-preview {
