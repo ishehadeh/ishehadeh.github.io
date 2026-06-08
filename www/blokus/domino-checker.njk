@@ -1,0 +1,29 @@
+---
+layout: layouts/base.njk
+title: Domino Checker
+---
+
+<link rel="stylesheet" href="{{ '/styles/domino-checker.css' | url }}">
+
+<h2 class="main-header">Domino Checker</h2>
+
+<p class="no-indent lead">
+	Upload a Blokus contraption image (black walls, white start cells, colored wires).
+	The solver finds final domino tilings with a given number of placed cells.
+</p>
+
+<ol>
+	<li>Image format: opaque pixels only; <strong>black</strong> = walls, <strong>white</strong> = start cells, other colors = wires.</li>
+	<li><strong>Target cells</strong> defaults to 18 (must be even, since each domino covers 2 cells).</li>
+	<li><strong>Solve</strong> runs in the browser; <strong>Stop</strong> aborts the search.</li>
+	<li>Solutions appear as downloadable PNGs with a gray overlay on placed cells.</li>
+</ol>
+
+<div id="domino-checker-root"></div>
+
+<script src="{{ '/js/domino-checker.browser.js' | url }}" data-auto-app="false" defer></script>
+<script defer>
+	document.addEventListener("DOMContentLoaded", () => {
+		window.DominoChecker.createApp(document.getElementById("domino-checker-root"));
+	});
+</script>

@@ -1,0 +1,9 @@
+#domino-checker-root .dc-app {
+	min-height: auto;
+	padding: 0;
+	background: transparent;
+}
+
+#domino-checker-root .dc-header h1 {
+	display: none;
+}
