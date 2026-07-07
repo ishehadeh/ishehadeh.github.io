@@ -1,7 +1,7 @@
 ---
 title: 'Checking Blokus Logic Gates, Again'
 description: 
-date: 2026-07-04
+date: 2026-07-07
 tags: blog
 layout: layouts/blog.njk
 draft: false
