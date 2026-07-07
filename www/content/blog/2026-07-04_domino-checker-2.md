@@ -26,8 +26,8 @@ You can "paint" a board with either "blocks", squares where the player can't pla
 
 As the user paints the moves from that board state update in real time.
 This is also a  _massive_ performance problem, but hey it's just a first pass.
-I think I may try doing the board calculations asyncronously in a worker, and stream them back in the future.
-Pagination woul be fantastic as well, but I'd have to modify cgtjs to do that.
+I think I may try doing the board calculations asynchronously in a worker, and stream them back in the future.
+Pagination would be fantastic as well, but I'd have to modify cgtjs to do that.
 
 ## Import / Export
 
